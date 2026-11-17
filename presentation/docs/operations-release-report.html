@@ -1,0 +1,26 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
+<title>營運管理中心 V1.0 · 開發與發布報告｜崁仔頂小商人</title><link rel="stylesheet" href="../presentation.css"></head>
+<body><main class="doc-reader">
+<nav class="doc-links" aria-label="文件操作"><a href="../">返回成果首頁</a><a href="../../admin.html">開啟營運管理 Demo 後台</a><a href="./downloads/ADMIN_OPERATIONS_V1_REPORT.md" download>下載 Markdown</a></nav>
+<h1>營運管理中心 V1.0 · 開發與發布報告</h1>
+<aside class="doc-callout" aria-label="展示狀態"><p><strong>營運管理中心 V1.0</strong> · 財務規則 <strong>DEMO PROPOSED</strong></p>
+<p>發布提交 <a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/793dab92c5b8e37ff9134b3d6f97ab112741a25e"><code>793dab92c5b8e37ff9134b3d6f97ab112741a25e</code></a></p>
+<p>歷史功能測試 <strong>9/9 PASS</strong>（依 V1.0 原驗收報告）。本次文件整合另行驗收。</p>
+<p>本頁為公開展示。資料僅存於目前瀏覽器，未連接真實銀行、物流或 Email。Demo 測試通過不等於正式網站上線驗收。</p></aside>
+<nav class="doc-links" aria-label="後台章節"><a href="../../admin.html#orders">訂單管理</a><a href="../../admin.html#shipping">出貨單管理</a><a href="../../admin.html#profit">損益分析</a><a href="../../admin.html#accounting">會計流水帳</a></nav>
+<nav class="doc-toc" aria-label="文件目錄"><h2>目錄</h2><ul><li><a href="#section-1">盤點與依據</a></li><li><a href="#section-2">實作與相容性</a></li><li><a href="#section-3">測試與安全</a></li><li><a href="#section-4">GitHub 發布</a></li><li><a href="#section-5">正式實裝待決策</a></li></ul></nav>
+<article class="doc-content"><blockquote>公開版。保留 Demo 驗收結果、公開提交與功能差異。內部工作區資訊、非公開規格連結及本機驗收證據路徑已移除。</blockquote>
+<h2 id="section-1">盤點與依據</h2>
+<ul><li>正式私有專案於本次 Demo 開發中僅供唯讀參考。</li><li>獨立 Demo 前一版 <code>987da2c38bf25abf4ca63490c149baa369440b76</code>。沿用目前的商品庫存、公告影片、模擬信件、付款回填與核帳、整單分配及重設。</li><li>唯讀參考正式出貨決策、資料模型 V1.2 與營運週期規則。首次正式分配鎖定收件，未核對、退款異常及重複分配均阻擋，取消與退款不自動回補庫存。</li></ul>
+<h2 id="section-2">實作與相容性</h2>
+<ul><li><code>src/admin.html</code>、<code>src/admin.js</code>、<code>src/admin-operations.js</code>、<code>src/styles.css</code> 提供九區導覽、共用篩選、訂單詳細及鎖定、批次例外、A4 列印、損益、會計更正及 CSV。</li><li><code>src/operations.js</code> 集中台北時間與週期、批次條件、核帳衍生現金、成本快照計算與 CSV 序列化。聚合和明細以同一份資料計算。</li><li><code>src/demo-state.js</code>、<code>src/demo.js</code>、<code>src/index.html</code>、<code>src/rules.js</code> 保留原狀態鍵，新增舊單相容欄位及收件選擇。舊成本不回填現在商品資料，有證據才帶入舊日期，原有訂單及購物車保留。</li><li>付款、收件人及出貨資料以合成情境展示。對外發布限 <code>scripts/public-files.mjs</code> 的靜態白名單。文件與測試保留在本機。</li><li>本機維護測試、發布白名單、操作手冊及報告。</li></ul>
+<h2 id="section-3">測試與安全</h2>
+<ul><li>最終建置產生 40 個靜態檔案。單元測試 9/9，包含週二正午、核帳來源、退款上限、成本快照、缺資料、批次守衛、舊資料遷移及 CSV。</li><li>靜態白名單、機密及外部服務掃描、PPTX 套件掃描通過。正式專案的既有檔案保留。</li><li>本機 Chrome 1440、820、375px 確認下單、人工核帳、退款阻擋、單一批次、收件鎖定、取消保留庫存、A4 揀貨、商品成本快照、淨利、帳務更正與 CSV，以及既有前台、後台、歷程、簡報和重設。</li></ul>
+<div class="doc-table" tabindex="0" role="region" aria-label="歷史驗收表"><table><thead><tr><th>歷史驗收項目</th><th>V1.0 結果</th></tr></thead><tbody><tr><td>單元測試</td><td>9/9 PASS</td></tr><tr><td>公開站 Chrome</td><td>1440、820、375 px 通過</td></tr><tr><td>公開展示資源</td><td>39 個回應 200 且與本機建置位元一致</td></tr><tr><td>A4 列印</td><td>出貨單、揀貨單、損益及現金報表</td></tr></tbody></table></div>
+<p>Demo 測試通過不等於正式網站上線驗收。本表為 V1.0 歷史結果，文件整合另行測試。</p>
+<h2 id="section-4">GitHub 發布</h2>
+<ul><li>獨立 Demo <code>main</code> 從 <code>987da2c</code> 前進到 <a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/793dab92c5b8e37ff9134b3d6f97ab112741a25e"><code>793dab92c5b8e37ff9134b3d6f97ab112741a25e</code></a>。在獨立 clone 逐位元核對 40 個白名單檔案，提交新增兩個 JS 靜態檔及更新七個既有檔。</li><li>公開 GitHub Pages 39 個展示資源回應 200，位元與本機一致。部署控制檔 <code>.nojekyll</code> 另於 Git 索引確認。</li><li>公開站 Chrome 1440、820、375px 通過同一套前後台及營運流程。1440px 的 Chromium PDF 驗證出貨單、揀貨清單、損益報表與現金報表皆使用 A4。</li></ul>
+<h2 id="section-5">正式實裝待決策</h2>
+<p>財務口徑均為 DEMO PROPOSED。須確認現金與管理損益的正式認列、整單及共同費用分攤、跨期退款、憑證、調整權限與稽核。正式環境的解鎖、退款分配處置、雲端授權與交易一致性須單獨驗證。Demo 庫存沿用現行購物車即時動畫及下單扣減，狀態存於瀏覽器。出貨單為 A4 展示用紙本，未產生物流商託運標籤。</p></article></main></body></html>

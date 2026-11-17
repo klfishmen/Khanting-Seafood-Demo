@@ -18,6 +18,32 @@ a { color: #155e60; font-weight: 700; }
 .demo-entry h2 { margin: 0 0 .4rem; font-size: 1rem; }
 .demo-entry a + a, #demo-links a + a { margin-inline-start: 1rem; }
 .notice { margin-block: 1.25rem; }
+.document-section { margin-top: 2rem; }
+.document-section h2 { font-size: clamp(1.25rem, 3vw, 1.7rem); }
+.document-card, .doc-toc, .doc-content {
+  border: 1px solid #99acaa; border-radius: .5rem; padding: clamp(1rem, 3vw, 1.5rem); background: #fffdf8;
+}
+.document-card { display: flex; flex-direction: column; border-top: .25rem solid #247f80; }
+.document-card h3, .doc-toc h2 { margin: 0; }
+.document-card p { margin: .5rem 0 1rem; }
+.document-card .doc-links { margin-top: auto; }
+.doc-links { display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; }
+.doc-links a { display: inline-block; padding-block: .35rem; }
+.doc-reader { max-width: 54rem; overflow-wrap: anywhere; }
+.doc-reader > h1 { margin-block: .6em; }
+.doc-callout { background: #142d3a; color: #f4f0e7; border-left: .35rem solid #e6a052; padding: .65rem 1rem; margin-block: 1rem; }
+.doc-callout p { margin-block: .45rem; }
+.doc-callout a { color: #ffd4a4; }
+.doc-toc, .doc-content { margin-top: 1rem; }
+.doc-content { line-height: 1.7; }
+.doc-content li + li { margin-top: .45rem; }
+.doc-content h2 { margin-top: 1.5rem; }
+.doc-content blockquote { margin-inline: 0; border-left: .25rem solid #e6a052; padding-inline-start: .85rem; }
+.doc-content code { background: #ecf2ee; padding-inline: .2rem; }
+.doc-content pre, .doc-table { overflow-x: auto; }
+.doc-content table { width: 100%; border-collapse: collapse; }
+.doc-content th, .doc-content td { text-align: left; vertical-align: top; padding: .55rem; border: 1px solid #99acaa; }
+.doc-content th { background: #e0eeeb; }
 .viewer > h1 { margin-block: .4em; }
 #player { padding: clamp(.45rem, 2vw, 1rem); background: #142d3a; color: #f4f0e7; border-radius: .5rem; }
 #slide-image { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; display: block; margin-inline: auto; }
@@ -29,6 +55,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: .18rem s
 .slide-notes { border-top: 1px solid #5c737d; margin: .8rem 0 0; padding: .75rem .4rem .2rem; overflow-wrap: anywhere; }
 .slide-notes a { color: #ffd4a4; }
 .slide-notes p { margin: .4rem 0; }
+#audit-exhibit img { display: block; max-width: 100%; height: auto; margin-block: .5rem; }
 summary { cursor: pointer; }
 #player-message:empty { display: none; }
 #player:fullscreen { overflow: auto; }

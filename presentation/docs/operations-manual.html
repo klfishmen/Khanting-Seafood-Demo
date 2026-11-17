@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
+<title>營運管理中心 V1.0 操作手冊｜崁仔頂小商人</title><link rel="stylesheet" href="../presentation.css"></head>
+<body><main class="doc-reader">
+<nav class="doc-links" aria-label="文件操作"><a href="../">返回成果首頁</a><a href="../../admin.html">開啟營運管理 Demo 後台</a><a href="./downloads/DEMO_OPERATIONS_ACCOUNTING_MANUAL.md" download>下載 Markdown</a></nav>
+<h1>營運管理中心 V1.0 操作手冊</h1>
+<aside class="doc-callout" aria-label="展示狀態"><p><strong>營運管理中心 V1.0</strong> · 財務規則 <strong>DEMO PROPOSED</strong></p>
+<p>發布提交 <a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/793dab92c5b8e37ff9134b3d6f97ab112741a25e"><code>793dab92c5b8e37ff9134b3d6f97ab112741a25e</code></a></p>
+<p>歷史功能測試 <strong>9/9 PASS</strong>（依 V1.0 原驗收報告）。本次文件整合另行驗收。</p>
+<p>本頁為公開展示。資料僅存於目前瀏覽器，未連接真實銀行、物流或 Email。Demo 測試通過不等於正式網站上線驗收。</p></aside>
+<nav class="doc-links" aria-label="後台章節"><a href="../../admin.html#orders">訂單管理</a><a href="../../admin.html#shipping">出貨單管理</a><a href="../../admin.html#profit">損益分析</a><a href="../../admin.html#accounting">會計流水帳</a></nav>
+<nav class="doc-toc" aria-label="文件目錄"><h2>目錄</h2><ul><li><a href="#section-1">1. 建立訂單並人工核帳</a></li><li><a href="#section-2">2. 整單出貨與列印</a></li><li><a href="#section-3">3. 損益分析 · DEMO PROPOSED</a></li><li><a href="#section-4">4. 會計流水帳 · DEMO PROPOSED</a></li><li><a href="#section-5">常見問題、重設與正式差異</a></li></ul></nav>
+<article class="doc-content"><p>適用於 <a href="../../admin.html">獨立 Demo 後台</a>。請使用同一個瀏覽器及同一個網站來源開啟前台與後台。資料存入該瀏覽器的 localStorage。所有商品、收件人、匯款與出貨均為模擬，請只填虛構資料。</p>
+<h2 id="section-1">1. 建立訂單並人工核帳</h2>
+<ol><li>前台將現流透抽兩份加入購物車。使用示範 Email <code>demo-buyer@example.invalid</code> 及後四碼 <code>1234</code>，送出訂單。開賣且未達免運的情境下，商品 NT$520、運費 NT$130，合計 NT$650。</li><li>至「訂單管理」搜尋訂單編號，或使用顧客名稱、遮罩手機、日期、週期和狀態篩選。「查看詳情」可看到商品小計、整單運費、售價及成本快照、收件與狀態歷史。</li><li>開啟模擬信件或訂單中的回報表單，填應付金額與合成末五碼 <code>54321</code>。提交後是待核對。</li><li>到「付款核帳」人工核對。金額或末碼不符時仍未付款，顧客可重新回報。核帳成功才在流水帳出現該訂單的一筆收款。</li><li>未付款且未分配的訂單可在詳情輸入原因後取消。取消不調整庫存或週累積。退款異常會阻擋未完成的出貨，實際退款由展示帳務分開記錄。</li></ol>
+<h2 id="section-2">2. 整單出貨與列印</h2>
+<ol><li>正式分配前，收件人可在回填頁變更虛構門市組合，後台也可在訂單詳情編輯姓名、手機及兩間門市。門市代碼選填。</li><li>到「出貨單管理」建立批次，再回「訂單管理」按「分配所選批次」。逐筆分配可把多張合資格訂單放入同一批。未付款、退款異常、已取消、缺收件資料及已分配的訂單會被阻擋。分配時鎖定收件快照。</li><li>以批次編號、備註或狀態篩選。批次列顯示建立日期、訂單量與商品總件數。按「出貨單」或「揀貨清單」可預覽並用瀏覽器列印 A4 或另存 PDF。出貨單顯示手機遮罩與門市，揀貨清單合計同商品數量。</li><li>依序推進待揀貨、已揀貨、待寄件、已寄件、已完成。「已寄件」會一起標記尚未模擬出貨的批次訂單。舊有單筆「標記模擬出貨」也保留，適用同一出貨安全檢查並留紀錄。</li><li>批次異常需填原因，會擋住列印及下一步。解除也需留下原因。若其中一張訂單仍有退款異常，解除批次標記後仍會阻擋。</li></ol>
+<h2 id="section-3">3. 損益分析 · DEMO PROPOSED</h2>
+<ul><li>「總覽與訂單篩選」以台北日期及 <code>weekly_cycle_id</code> 選擇訂單群組。週期代號以週二中午起點日期表示，例如 <code>W-2026-11-17</code>。展示情境可切換接單畫面，日期和週期仍以建立訂單的實際台北時間記錄。</li><li>訂單銷售總額含運費並排除取消單。已核帳收款含已核對的商品與運費，未核帳銷售另列。商品成本使用訂單成立當時的快照，商品後續改價或改成本不會回寫舊單。</li><li>淨利＝商品毛利＋顧客支付運費＋其他收入－物流費－其他營運費用－已記錄退款－調整支出。進貨付款看流水帳，損益以商品成本計入，避免重複扣除。選商品或分類時只看商品層級，整單費用不分攤。</li><li>例：兩份透抽的商品成本共 NT$300、毛利 NT$220。核帳 NT$650、實付物流 NT$120，無其他帳務時，示範淨利 NT$230。缺商品成本或物流資料時，受影響指標會顯示待補；物流確定免費時可登記 NT$0 並說明。</li><li>明細、銷售趨勢、商品毛利排行及週期摘要用同一份模擬資料。週期或單筆訂單報表只帶入連結該批訂單的帳務，未連結費用按帳務日期留在全站期間報表。</li></ul>
+<h2 id="section-4">4. 會計流水帳 · DEMO PROPOSED</h2>
+<ol><li>登記其他收入、進貨、物流、包材、平台或手續費、其他費用、退款或調整支出。輸入日期、整數金額及備註，物流或退款須連結已核帳訂單。退款前須在訂單標記異常，累計金額不得超過原收款。</li><li>已核帳收款由訂單即時計算，不能透過手動帳務再登記。「其他收入」限未連結訂單的非訂單收入。</li><li>在「更正」修改同一筆帳務並說明原因。現金及損益採目前版，使用「更正歷史」檢視前後版本。現金按收付款日期及目前篩選條件加總。</li><li>「匯出 CSV」輸出篩選結果，以 UTF-8 BOM 支援 Excel。可用「列印現金報表」或「列印損益報表」匯出紙本及 PDF。</li></ol>
+<h2 id="section-5">常見問題、重設與正式差異</h2>
+<ul><li>前後台資料不同步時，先確認同一瀏覽器設定檔和網站來源。隱私模式或其他裝置會各有一份資料。</li><li>舊單若缺成立日、核帳日或成本，顯示待補。有可追溯操作時間時才帶入舊單及舊批次科目。</li><li>「重設展示資料」會一起清除本瀏覽器的訂單、購物車、批次、帳務及操作紀錄，並恢復預設商品與成本。</li><li>Demo 使用頁面操作及瀏覽器資料模擬庫存；正式規格要求成功下單由後端交易扣庫存。正式環境還需要授權、交易一致性、稽核、收件隱私及真實物流的獨立驗收。</li><li>本資料是 Demo 管理報表，非正式財務報表或稅務申報系統。正式實裝待確認收入與成本認列、物流及共同費用分攤、跨期退款、收件解鎖、異常處置、調整授權及對帳憑證。</li></ul></article></main></body></html>

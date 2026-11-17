@@ -14,6 +14,7 @@
     page = /^[1-8]$/.test(location.hash.slice(1)) ? Number(location.hash.slice(1)) : 1;
     image.src = './slides/slide-' + page + '.png';
     image.alt = '第 ' + page + ' 頁：' + titles[page - 1];
+    document.querySelector('#audit-exhibit').hidden = page !== 5;
     document.querySelector('#page-status').textContent = page + ' / ' + titles.length + '　' + titles[page - 1];
     document.querySelector('#history-links').hidden = page !== 6;
     document.querySelector('#demo-links').hidden = page !== 7;
