@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; worker-src 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="基隆鮮物・崁仔頂小商人的海鮮團購展示。">
+  <title>崁仔頂小商人｜海鮮團購 Demo</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./rules.js" defer></script>
+  <script src="./fixtures.js" defer></script>
+  <script src="./demo-state.js" defer></script>
+  <script src="./demo.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">鮮</span><span>崁仔頂小商人<small>基隆鮮物</small></span></a>
+    <nav aria-label="主要導覽">
+      <a href="#market">現流搶拍</a><a href="#frozen">冷凍常備</a><a href="#videos">影片</a><a href="#qa">QA</a><a href="#community">留言板</a>
+      <button id="open-cart" type="button" aria-haspopup="dialog" aria-controls="checkout">購物車 <span id="nav-count">0</span></button>
+      <button id="open-lookup" type="button" class="secondary" aria-haspopup="dialog">查詢訂單</button>
+    </nav>
+  </header>
+  <main id="top">
+    <section class="panel demo-banner" aria-labelledby="demo-banner-title">
+      <h2 id="demo-banner-title">團購公告 <span class="demo-pill">DEMO</span></h2>
+      <p><strong>DEMO 展示環境，所有訂單及付款均為模擬，不接受真實交易</strong></p>
+      <p id="announcement-copy"></p>
+      <p class="muted">台北時間每週二 12:00 開始至週一 23:59，週二 00:00–12:00 結算，暫停新訂單。</p>
+      <div class="scenario-controls">
+        <label for="scenario-select">展示情境</label>
+        <select id="scenario-select">
+          <option value="open">開賣中</option><option value="settlement">結算暫停接單</option>
+          <option value="soldout">現流售罄</option><option value="free">免運達標</option>
+        </select>
+        <p id="scenario-status" role="status"></p>
+      </div>
+    </section>
+    <div class="shop">
+      <section class="panel" id="market" aria-labelledby="market-title">
+        <h1 id="market-title" tabindex="-1">每日現流限量搶拍</h1>
+        <p class="muted">每款現流商品獨立計算，單次最多選 10 份。立即搶拍會扣減剩餘數量，從購物車移除即可釋回。</p>
+        <div class="products" id="fresh-products"></div>
+        <p id="fresh-empty" class="muted" hidden>目前沒有上架的現流商品。</p>
+      </section>
+      <section class="panel" id="frozen" aria-labelledby="frozen-title">
+        <h2 id="frozen-title">冷凍常備商品</h2>
+        <p class="muted">每款單次最多選 6 份。</p>
+        <div class="products" id="frozen-products"></div>
+        <p id="frozen-empty" class="muted" hidden>目前沒有上架的冷凍商品。</p>
+      </section>
+      <section class="panel" id="videos" aria-labelledby="videos-title">
+        <h2 id="videos-title">崁仔頂影片區</h2>
+        <p class="muted">合成本機影片，最多顯示三筆。</p>
+        <div id="video-library" class="video-library"></div>
+      </section>
+      <div class="support">
+        <section class="panel" id="qa" aria-labelledby="qa-title">
+          <h2 id="qa-title">常見問題 QA</h2>
+          <button type="button" id="show-welcome" class="secondary" aria-haspopup="dialog">查看新人須知</button>
+          <details>
+            <summary>現流商品通常什麼時候上架？</summary>
+            <p>原專案規劃週二至週六中午 12:00 例行上架，週日也可能加開。Demo 的商品隨時可試選。</p>
+          </details>
+          <details>
+            <summary>每週什麼時候暫停下單？</summary>
+            <p>原專案規劃週二 00:00 起暫停新訂單並進入結算，預計當天中午 12:00 切換新週期。</p>
+          </details>
+          <details>
+            <summary>可以把不同週的訂單合併寄出嗎？</summary>
+            <p>原專案原則為每週出貨、不接受跨週寄庫。特殊情況須由管理者逐案評估。</p>
+          </details>
+          <details>
+            <summary>一定要登入才能選購嗎？</summary>
+            <p>可以直接瀏覽、選數量及加入購物車。展示首頁與選購流程都免登入。</p>
+          </details>
+          <details>
+            <summary>打開購物車要填什麼？</summary>
+            <p>請輸入展示 Email demo-buyer@example.invalid 和手機後四碼 1234，兩欄都是合成資料。</p>
+          </details>
+          <details>
+            <summary>每種商品一次最多能選幾份？</summary>
+            <p>本 Demo 每款現流單次最多 10 份，冷凍最多 6 份；剩餘量低於上限時，下拉選單會隨之縮減。</p>
+          </details>
+          <details>
+            <summary>按立即搶拍後，剩餘數量怎麼算？</summary>
+            <p>各款現流獨立計算。本 Demo 加入購物車時即從展示剩餘量扣除；移除商品就會釋回，成立訂單時顯示的剩餘量不會再扣一次。</p>
+          </details>
+          <details>
+            <summary>為什麼商品無法再加入購物車？</summary>
+            <p>當可選數量為零，商品的選單和按鈕會停用。若庫存全在你的購物車中，可從購物車移除部分數量後再選。</p>
+          </details>
+          <details>
+            <summary>運費和免運門檻怎麼算？</summary>
+              <p>Demo 依本期累積商品小計試算：NT$2,000 以下為 NT$130；超過 NT$2,000、未滿 NT$3,000 為 NT$60；滿 NT$3,000 免運。運費不列入商品累積。</p>
+          </details>
+          <details>
+            <summary>滿額後就會立刻出貨嗎？</summary>
+            <p>原專案仍須確認付款、出貨選項及相關出貨條件。Demo 的出貨狀態由展示後台手動標記。</p>
+          </details>
+          <details>
+            <summary>怎麼查看剛建立的示範訂單？</summary>
+            <p>購物車會顯示最新一筆示範訂單。也可以在原瀏覽器開啟模擬信件中的單筆連結，查看該筆訂單及匯款回報狀態。</p>
+          </details>
+          <details>
+            <summary>按模擬付款會真的扣款嗎？</summary>
+            <p>使用合成匯款資料回報，再由展示後台核對。訂單成立信和付款通知可在模擬寄件匣預覽。</p>
+          </details>
+          <details>
+            <summary>提交匯款回報後就算已付款嗎？</summary>
+            <p>回報送出後先列為待核對，須由管理者核對後才確認付款。本 Demo 只比對合成入帳金額與合成帳號末五碼。</p>
+          </details>
+          <details>
+            <summary>公開留言和私人留言有什麼差別？</summary>
+            <p>公開留言板用於商品提問與料理心得；私人頁籤展示店家客服對話。兩邊都使用預設範例，重新整理會清除新增留言。</p>
+          </details>
+        </section>
+        <section class="panel" id="community" aria-labelledby="community-title">
+          <h2 id="community-title">買家留言板</h2>
+          <p class="muted">展示用留言板。留言只保留在目前頁面，重新整理即清除。</p>
+          <div class="board-tabs" role="tablist" aria-label="留言類型">
+            <button type="button" role="tab" id="public-tab" aria-controls="public-board" aria-selected="true">公開留言板</button>
+            <button type="button" role="tab" id="private-tab" aria-controls="private-board" aria-selected="false" tabindex="-1">私人留言</button>
+          </div>
+          <section role="tabpanel" id="public-board" aria-labelledby="public-tab" tabindex="0">
+            <p class="muted">公開張貼選購問題與料理心得，最新留言在上方。</p>
+            <ul class="messages" id="public-messages" aria-label="公開訊息">
+              <li><h3>透抽料理</h3><small>示範買家 · 料理心得</small><p>想試試看把透抽做成鹽烤透抽。</p></li>
+            </ul>
+            <div class="message-composer">
+              <label for="public-message">選擇公開示範訊息</label>
+              <select id="public-message">
+                <option value="mackerel">鯖魚便當｜料理心得</option>
+                <option value="shrimp">白蝦怎麼煮？｜選購提問</option>
+              </select>
+              <button type="button" id="post-public">發佈公開訊息</button>
+            </div>
+          </section>
+          <section role="tabpanel" id="private-board" aria-labelledby="private-tab" tabindex="0" hidden>
+            <div id="private-gate">
+              <p class="muted">查看一組展示顧客與店家的合成對話。</p>
+              <button type="button" id="open-private">開啟私人留言範例</button>
+            </div>
+            <div id="private-conversation" hidden>
+              <p class="muted">模擬展示顧客與店家的對話。</p>
+              <ul class="messages" id="private-messages" aria-label="私人訊息">
+                <li><strong>示範客服</strong><p>您好，需要協助查詢哪一筆示範訂單？</p></li>
+              </ul>
+              <div class="message-composer">
+                <label for="private-message">選擇私人示範訊息</label>
+                <select id="private-message">
+                  <option>我想詢問示範訂單 DEMO-001 的配送進度。</option>
+                  <option>我想確認這筆示範訂單的取貨方式。</option>
+                </select>
+                <button type="button" id="post-private">送出私人留言</button>
+              </div>
+            </div>
+          </section>
+          <p id="board-status" class="sr-only" role="status"></p>
+        </section>
+      </div>
+    </div>
+  </main>
+  <dialog class="panel welcome" id="welcome" aria-labelledby="welcome-title">
+    <h2 id="welcome-title">新人須知</h2>
+    <ul>
+      <li>可以直接瀏覽商品、現流搶拍和加入購物車。</li>
+      <li>打開購物車時，請輸入展示 Email 與手機後四碼。</li>
+      <li>現流商品各自限量，按立即搶拍就會更新剩餘數量。</li>
+      <li>本頁使用合成資料，付款和寄信都是模擬操作。</li>
+    </ul>
+    <button type="button" id="close-welcome" autofocus>知道了，開始逛魚市</button>
+  </dialog>
+  <dialog class="panel checkout" id="checkout" aria-labelledby="checkout-title">
+    <div class="dialog-header">
+      <h2 id="checkout-title">購物車</h2>
+      <button type="button" class="secondary" id="close-cart">關閉購物車</button>
+    </div>
+    <form id="cart-access" class="checkout-actions" autocomplete="off">
+      <p class="muted">請輸入展示資料 <strong>demo-buyer@example.invalid</strong> 與 <strong>1234</strong>。</p>
+      <label for="cart-email">Email</label>
+      <input id="cart-email" type="email" required placeholder="demo-buyer@example.invalid" spellcheck="false">
+      <label for="cart-phone">手機後四碼</label>
+      <input id="cart-phone" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required placeholder="1234">
+      <p id="cart-error" class="field-error" role="alert" hidden>請使用上方的展示 Email 與手機後四碼。</p>
+      <button type="submit">查看購物車</button>
+    </form>
+    <div id="cart-content" hidden>
+      <p id="cart-empty" class="muted" tabindex="-1">購物車目前是空的。</p>
+      <ul id="cart-items" class="cart-items" aria-label="購物車品項"></ul>
+      <p id="cart-unavailable" class="field-error" hidden>有商品已下架或庫存不足，請調整購物車後再建立訂單。</p>
+      <p id="cart-settlement" class="field-error" hidden>結算時段暫停新訂單，購物車內容會保留。</p>
+      <dl class="totals">
+        <div><dt>現流搶拍小計</dt><dd id="fresh-total">NT$0</dd></div>
+        <div><dt>冷凍商品小計</dt><dd id="frozen-total">NT$0</dd></div>
+        <div><dt>本期商品累積（含本次）</dt><dd id="cycle-total">NT$0</dd></div>
+        <div><dt>模擬運費</dt><dd id="shipping">NT$0</dd></div>
+        <div class="grand-total"><dt>合計</dt><dd id="total">NT$0</dd></div>
+      </dl>
+      <button type="button" id="place-order" disabled>建立示範訂單</button>
+      <section id="order-panel" class="order" aria-labelledby="order-title" hidden>
+        <h3 id="order-title" tabindex="-1">示範訂單</h3>
+        <p id="order-summary"></p>
+        <ul id="order-stock" class="stock-results" aria-label="本次搶拍結果" hidden></ul>
+        <p id="payment-status"></p>
+        <a class="button-link secondary" id="open-report-link" hidden>開啟示範信件的回填表單</a>
+        <button type="button" id="send-email" class="secondary" disabled>模擬寄信</button>
+        <p id="email-status" tabindex="-1" hidden>已記錄模擬通知，收件者為 demo-buyer@example.invalid。</p>
+      </section>
+      <p id="cart-status" class="sr-only" role="status"></p>
+    </div>
+  </dialog>
+  <dialog id="lookup-dialog" class="panel product-editor" aria-labelledby="lookup-title">
+    <div class="dialog-header"><h2 id="lookup-title">查詢示範訂單</h2><button id="close-lookup" type="button" class="secondary">關閉</button></div>
+    <p class="muted">只列出目前瀏覽器的合成訂單。</p>
+    <ul id="lookup-list" class="admin-list"></ul>
+  </dialog>
+  <dialog class="panel product-editor" id="report-dialog" aria-labelledby="report-title">
+    <div class="dialog-header">
+      <h2 id="report-title">匯款與收件回填</h2>
+      <button type="button" class="secondary" id="close-report">關閉</button>
+    </div>
+    <p id="report-order"></p>
+    <p id="report-message" role="status"></p>
+    <form class="checkout-actions" id="report-form" hidden>
+      <p class="muted">請使用畫面金額與合成帳號末五碼 54321，並選擇一組示範收件資料。</p>
+      <label for="report-amount">匯款金額（NT$）</label>
+      <input type="number" id="report-amount" min="1" step="1" required>
+      <label for="report-tail">匯款帳號末五碼</label>
+      <input id="report-tail" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required>
+      <label for="report-recipient">示範收件資料</label>
+      <select id="report-recipient">
+        <option value="north">展示收件人 A｜基隆展示取貨點</option>
+        <option value="south">展示收件人 B｜台北展示取貨點</option>
+      </select>
+      <dl id="recipient-details" class="totals"></dl>
+      <button type="submit">送出示範匯款回報</button>
+    </form>
+  </dialog>
+  <p id="announcement" class="sr-only" role="status"></p>
+  <footer>崁仔頂小商人 · Demo｜商品、庫存與訂單均為合成資料。</footer>
+</body>
+</html>

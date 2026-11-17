@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; worker-src 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="崁仔頂小商人後台營運中心展示。">
+  <title>後台營運中心｜崁仔頂小商人 Demo</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./rules.js" defer></script>
+  <script src="./fixtures.js" defer></script>
+  <script src="./demo-state.js" defer></script>
+  <script src="./admin.js" defer></script>
+</head>
+<body>
+  <main class="panel admin" id="admin" aria-labelledby="admin-title">
+    <div class="dialog-header">
+      <h1 id="admin-title" tabindex="-1">後台營運中心</h1>
+    </div>
+    <p><strong>DEMO 展示環境，所有訂單及付款均為模擬，不接受真實交易</strong></p>
+    <p class="muted">展示後台可公開開啟。所有操作只影響目前瀏覽器的合成資料。</p>
+    <p><a href="./index.html" class="button-link secondary">返回展示首頁</a> <button type="button" id="reset-demo">重設展示資料</button></p>
+    <div class="admin-grid" id="admin-grid">
+      <section class="admin-section" aria-labelledby="admin-content-title">
+        <h3 id="admin-content-title">公告與影片</h3>
+        <form class="checkout-actions" id="announcement-form">
+          <label for="admin-announcement">首頁公告</label>
+          <textarea id="admin-announcement" maxlength="240" rows="3" required></textarea>
+          <button type="submit">儲存公告</button>
+        </form>
+        <h4>影片展示（最多三筆）</h4>
+        <ul id="admin-videos" class="admin-list"></ul>
+        <form class="checkout-actions" id="video-form">
+          <label for="video-name">新增本機展示片段標題</label>
+          <input id="video-name" maxlength="60" required>
+          <button type="submit">新增展示片段</button>
+        </form>
+      </section>
+      <section class="admin-section" aria-labelledby="admin-summary-title">
+        <h3 id="admin-summary-title">營運總覽</h3>
+        <dl id="admin-summary" class="totals"></dl>
+      </section>
+      <section class="admin-section" aria-labelledby="admin-notifications-title">
+        <h3 id="admin-notifications-title">模擬寄件匣</h3>
+        <ul id="admin-notifications" class="admin-list"></ul>
+      </section>
+      <section class="admin-section" aria-labelledby="admin-profit-title">
+        <h3 id="admin-profit-title">利潤統計（示範）</h3>
+        <p class="muted">商品毛利以已付款且有完整成本的訂單計算；運費不列入毛利。</p>
+        <dl id="admin-profit" class="totals"></dl>
+      </section>
+      <section class="admin-section" aria-labelledby="admin-remittance-title">
+        <h3 id="admin-remittance-title">匯款核對</h3>
+        <p class="muted">只比對合成入帳紀錄。客人提交表單後會先進入待核對。</p>
+        <ul id="admin-remittances" class="admin-list"></ul>
+      </section>
+      <section class="admin-section admin-catalog" aria-labelledby="admin-stock-title">
+        <div class="dialog-header">
+          <h2 id="admin-stock-title">商品管理</h2>
+          <button type="button" id="new-product">新增商品</button>
+        </div>
+        <p class="muted">首頁現流最多展示兩款，可售品項優先。圖片請使用合成商品素材。</p>
+        <div class="catalog-filters">
+          <label>分類<select id="product-filter"><option value="all">全部商品</option><option value="fresh">現流</option><option value="frozen">冷凍</option></select></label>
+          <label>狀態<select id="product-status-filter"><option value="all">全部狀態</option><option value="active">已上架</option><option value="draft">草稿</option><option value="paused">已下架</option><option value="stopped">停售</option></select></label>
+        </div>
+        <ul id="admin-stock" class="admin-list"></ul>
+        <h4>庫存異動</h4>
+        <ul id="admin-stock-log" class="admin-list"></ul>
+      </section>
+      <section class="admin-section" aria-labelledby="admin-orders-title">
+        <h3 id="admin-orders-title">訂單與模擬出貨</h3>
+        <ul id="admin-orders" class="admin-list"></ul>
+        <form id="batch-form" class="checkout-actions">
+          <label for="batch-select">出貨批次</label>
+          <select id="batch-select"></select>
+          <button type="submit">建立新批次</button>
+        </form>
+        <ul id="admin-batches" class="admin-list" aria-label="出貨批次清單"></ul>
+      </section>
+    </div>
+    <p id="admin-status" role="status" class="sr-only"></p>
+  </main>
+  <dialog class="panel product-editor" id="product-editor" aria-labelledby="product-editor-title">
+    <div class="dialog-header">
+      <h2 id="product-editor-title">商品資料</h2>
+      <button type="button" class="secondary" id="close-product-editor">關閉</button>
+    </div>
+    <form id="product-form" class="checkout-actions">
+      <label for="product-name">商品名稱</label>
+      <input id="product-name" required maxlength="60">
+      <label for="product-type">商品分類</label>
+      <select id="product-type"><option value="fresh">現流</option><option value="frozen">冷凍</option></select>
+      <div id="product-release-field" class="checkout-actions">
+        <label for="product-release">現流發布方式</label>
+        <select id="product-release"><option value="daily">例行上架</option><option value="extra">週日加開</option><option value="manual">不定時發布</option></select>
+      </div>
+      <label for="product-weight">規格</label>
+      <input id="product-weight" required maxlength="80" placeholder="例如 300 g／份">
+      <label for="product-description">商品說明</label>
+      <textarea id="product-description" maxlength="400" rows="3"></textarea>
+      <label for="product-price">售價（NT$）</label>
+      <input id="product-price" type="number" required min="1" max="999999" step="1">
+      <label for="product-cost">單位成本（NT$，選填）</label>
+      <input id="product-cost" type="number" min="0" max="999999" step="1">
+      <div id="product-list-price-field" class="checkout-actions" hidden>
+        <label for="product-list-price">冷凍原價（NT$，選填）</label>
+        <input id="product-list-price" type="number" min="1" max="999999" step="1">
+      </div>
+      <label for="product-stock">目前庫存（份）</label>
+      <input id="product-stock" type="number" required min="0" max="9999" step="1">
+      <label for="product-image">商品圖片（PNG、JPEG 或 WebP，最多 256 KB）</label>
+      <input id="product-image" type="file" accept="image/png,image/jpeg,image/webp">
+      <img id="product-preview" class="product-preview" alt="商品圖片預覽" hidden>
+      <button type="button" id="remove-product-image" class="secondary" hidden>移除圖片</button>
+      <p id="product-error" class="field-error" role="alert" hidden></p>
+      <button type="submit" id="save-product">儲存商品</button>
+    </form>
+  </dialog>
+  <dialog class="panel product-editor" id="email-preview" aria-labelledby="email-preview-title">
+    <div class="dialog-header">
+      <h2 id="email-preview-title">模擬信件預覽</h2>
+      <button type="button" class="secondary" id="close-email-preview">關閉</button>
+    </div>
+    <p>收件者 <strong id="email-preview-recipient"></strong></p>
+    <p>主旨 <strong id="email-preview-subject"></strong></p>
+    <p id="email-preview-body"></p>
+    <ul id="email-preview-items" class="admin-list" aria-label="信件訂單品項"></ul>
+    <dl id="email-preview-totals" class="totals"></dl>
+    <a class="button-link" id="email-preview-link" target="_blank" rel="noopener">開啟匯款與收件回填表單</a>
+    <p class="muted">本信件僅在 Demo 預覽，沒有實際寄出。</p>
+  </dialog>
+  <dialog class="panel product-editor" id="shipping-preview" aria-labelledby="shipping-preview-title">
+    <div class="dialog-header">
+      <h2 id="shipping-preview-title">示範出貨單</h2>
+      <button type="button" class="secondary screen-only" id="close-shipping-preview">關閉</button>
+    </div>
+    <p id="shipping-order-id"></p>
+    <p id="shipping-recipient"></p>
+    <ul id="shipping-items"></ul>
+    <p class="muted">本單只含合成資料，供展示列印。</p>
+    <button type="button" class="screen-only" id="print-order-sheet">列印出貨單</button>
+  </dialog>
+</body>
+</html>
