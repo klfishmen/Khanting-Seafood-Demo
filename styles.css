@@ -50,17 +50,19 @@ nav a:hover { color: var(--accent); text-decoration: underline; }
 #open-cart { padding-inline: .65rem; }
 #nav-count { display: inline-block; min-width: 1.4em; text-align: center; color: var(--navy); background: var(--paper); border-radius: 1rem; }
 .shop {
+  --shop-gap: 20px;
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  grid-template-rows: min-content min-content auto;
-  grid-template-areas:
-    "market frozen"
-    "videos frozen"
-    "support frozen";
-  gap: 1.75rem;
+  gap: var(--shop-gap);
   width: min(90%, 1160px);
   margin: clamp(1rem, 3vw, 2rem) auto;
   align-items: start;
+}
+.shop-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--shop-gap);
+  min-width: 0;
 }
 .demo-banner { width: min(90%, 1160px); margin: 1.25rem auto 0; }
 .demo-pill { display: inline-block; font-size: .65rem; vertical-align: middle; padding: .2rem .45rem; color: white; background: var(--navy-soft); border-radius: .35rem; }
@@ -77,16 +79,13 @@ p { margin: 0 0 .8rem; }
 .products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin-top: 1.25rem; }
 #frozen-products { grid-template-columns: minmax(0, 1fr); }
 .product, .checkout, .panel { padding: 1.15rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--cream); }
-#market { grid-area: market; min-width: 0; }
-#videos { grid-area: videos; min-width: 0; }
-#frozen { grid-area: frozen; min-width: 0; align-self: stretch; }
-video { display: block; width: 100%; aspect-ratio: 16 / 9; background: var(--ink); border-radius: .65rem; }
+#market, #videos, #frozen { min-width: 0; }
+video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: var(--ink); border-radius: .65rem; }
 .support {
-  grid-area: support;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
-  gap: 1.75rem;
+  gap: var(--shop-gap);
 }
 details { border-top: 1px solid var(--line); padding: .8rem 0; }
 details:first-of-type { margin-top: 1rem; }
@@ -205,11 +204,18 @@ footer { padding: 1rem 5vw 2rem; text-align: center; color: #c1cad5; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 900px) {
   .shop {
+    --shop-gap: 14px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
     grid-template-areas: "market" "frozen" "videos" "support";
   }
-  .support { grid-template-columns: minmax(0, 1fr); }
+  .shop-main { display: contents; }
+  #market { grid-area: market; }
+  #frozen { grid-area: frozen; }
+  #videos { grid-area: videos; }
+  .support {
+    grid-area: support;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 @media (max-width: 767px) {
   .products { grid-template-columns: minmax(0, 1fr); }
