@@ -1,6 +1,7 @@
 'use strict';
 
 const initialProducts = DemoFixtures.products;
+const legacyProductImages = { fresh: './fresh.png', frozen: './frozen.png' };
 const products = [];
 const quantityLimit = { fresh: 10, frozen: 6 };
 const productTypeLabel = { fresh: '現流', frozen: '冷凍' };
@@ -41,7 +42,12 @@ function loadDemoState() {
   } catch {
     saved = null;
   }
-  products.splice(0, products.length, ...(saved?.products ?? initialProducts.map(product => ({ status: "active", description: "", ...product }))));
+  const catalog = saved?.products?.map(product => {
+    if (product.image !== legacyProductImages[product.type]) return product;
+    const original = initialProducts.find(item => item.id === product.id && item.type === product.type);
+    return original ? { ...product, image: original.image } : product;
+  }) ?? initialProducts.map(product => ({ status: "active", description: "", ...product }));
+  products.splice(0, products.length, ...catalog);
   scenario = saved?.scenario ?? "open";
   announcements = saved?.announcements ?? [{
     id: 'market-update', text: saved?.announcement ?? DemoFixtures.announcement, published: true,
