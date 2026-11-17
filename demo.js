@@ -1,12 +1,11 @@
 'use strict';
 
-const demoEmail = demoCustomerEmail;
-const demoPhone = '1234';
 const publicPosts = {
   mackerel: { title: '鯖魚便當', category: '料理心得', body: '今天想用鯖魚片做便當。' },
   shrimp: { title: '白蝦怎麼煮？', category: '選購提問', body: '白蝦適合用清蒸的方式嗎？' },
 };
 let cartUnlocked = false;
+let currentDemoMember = demoMembers[0];
 let renderedProducts = '';
 let renderedVideos = '';
 
@@ -33,7 +32,7 @@ function changeQuantity(product, difference, animate = false) {
   announce(`${product.name}在購物車中的數量為 ${quantity}。`);
 }
 
-function cartAmounts() {
+function cartAmounts(at = new Date().toISOString()) {
   let fresh = 0;
   let frozen = 0;
   for (const product of products) {
@@ -42,7 +41,10 @@ function cartAmounts() {
     else frozen += amount;
   }
   const subtotal = fresh + frozen;
-  const accumulated = Math.max(cycleSubtotal, DemoRules.cycle(scenario).startingSpend) + subtotal;
+  const cycle = DemoOperations.cycleId(at);
+  const memberSpend = DemoOperations.sum(orders.filter(entry =>
+    entry.memberId === currentDemoMember.id && entry.weekly_cycle_id === cycle), entry => entry.subtotal ?? 0);
+  const accumulated = Math.max(memberSpend, DemoRules.cycle(scenario).startingSpend) + subtotal;
   const shipping = cart.size ? DemoRules.freight(accumulated) : 0;
   return { fresh, frozen, subtotal, accumulated, shipping, total: subtotal + shipping };
 }
@@ -209,7 +211,7 @@ function makeProductCard(product) {
 function renderProductCards() {
   const active = products.filter(product => product.status === 'active');
   const fresh = active.filter(product => product.type === 'fresh');
-  fresh.sort((a, b) => Number(demoStock(b) > 0) - Number(demoStock(a) > 0));
+  if (scenario !== 'soldout') fresh.sort((a, b) => Number(demoStock(b) > 0) - Number(demoStock(a) > 0));
   const visible = { fresh: fresh.slice(0, 2), frozen: active.filter(product => product.type === 'frozen') };
   const signature = JSON.stringify(visible, (key, value) => key === 'stock' ? undefined : value);
   if (signature === renderedProducts) return;
@@ -227,6 +229,10 @@ function resetCartAccess() {
   $('cart-error').hidden = true;
   $('cart-content').hidden = true;
   renderCart();
+}
+
+function syncMemberOrder() {
+  order = orders.find(entry => entry.memberId === currentDemoMember.id) ?? null;
 }
 
 function playStockEffect(number) {
@@ -247,15 +253,20 @@ function showCartContent() {
   $('cart-access').reset();
   $('cart-access').hidden = true;
   $('cart-content').hidden = false;
+  syncMemberOrder();
   renderCart();
+  renderOrder();
 }
 
 $('cart-access').addEventListener('submit', (event) => {
   event.preventDefault();
-  if ($('cart-email').value.trim().toLowerCase() !== demoEmail || $('cart-phone').value !== demoPhone) {
+  const member = demoMembers.find(entry => entry.email === $('cart-email').value.trim().toLowerCase() &&
+    entry.phone.slice(-4) === $('cart-phone').value);
+  if (!member) {
     $('cart-error').hidden = false;
     return;
   }
+  currentDemoMember = member;
   showCartContent();
   if (cart.size && !$('place-order').disabled) $('place-order').focus();
   else if (order && !order.paid && !order.cancelledAt) $('open-report-link').focus();
@@ -319,22 +330,21 @@ $('post-private').addEventListener('click', () => {
 
 $('place-order').addEventListener('click', () => {
   if (!DemoRules.cycle(scenario).orderOpen || !cartUnlocked || !$('checkout').open || !cart.size || cartHasUnavailableItems() || (order && !order.paid && !order.cancelledAt)) return;
-  const amounts = cartAmounts();
+  const createdAt = new Date().toISOString();
+  const amounts = cartAmounts(createdAt);
   const items = products.filter(product => cart.has(product.id)).map(product => ({
     id: product.id, name: product.name, type: product.type, quantity: cart.get(product.id),
     remaining: product.stock - cart.get(product.id), unitPrice: product.price, unitCost: product.unitCost,
   }));
-  const createdAt = new Date().toISOString();
   order = {
     id: `DEMO-${String(orders.length + 1).padStart(3, '0')}`,
     items, subtotal: amounts.subtotal, shipping: amounts.shipping, total: amounts.total,
     paid: false, emailRecorded: false, shipped: false,
     createdAt, weekly_cycle_id: DemoOperations.cycleId(createdAt),
-    customerName: '展示買家', customerPhone: '0000001234',
+    memberId: currentDemoMember.id, customerName: currentDemoMember.name, customerPhone: currentDemoMember.phone,
     reportToken: crypto.randomUUID(),
   };
   orders.unshift(order);
-  cycleSubtotal += amounts.subtotal;
   for (const product of products) {
     const quantity = cart.get(product.id) ?? 0;
     if (!quantity) continue;
@@ -344,6 +354,7 @@ $('place-order').addEventListener('click', () => {
   cart.clear();
   if (!saveDemoState({ type: '建立示範訂單', target: order.id, before: '購物車', after: '尚未核對' })) {
     loadDemoState();
+    syncMemberOrder();
     renderDemoContent();
     renderCart();
     renderOrder();
@@ -365,10 +376,12 @@ $('send-email').addEventListener('click', () => {
   announce('已記錄模擬通知。');
 });
 
+syncMemberOrder();
 renderCart();
 renderOrder();
 renderDemoContent();
 onDemoStateChange(() => {
+  syncMemberOrder();
   renderCart();
   renderOrder();
   renderDemoContent();
@@ -416,7 +429,7 @@ $('scenario-select').addEventListener('change', () => {
 });
 
 $('open-lookup').addEventListener('click', () => {
-  const rows = orders.map(entry => {
+  const rows = orders.filter(entry => entry.memberId === currentDemoMember.id).map(entry => {
     const row = document.createElement('li');
     const link = document.createElement('a');
     link.href = reportLink(entry);
@@ -431,7 +444,7 @@ $('open-lookup').addEventListener('click', () => {
 $('close-lookup').addEventListener('click', () => $('lookup-dialog').close());
 
 function renderRecipient() {
-  const recipient = demoRecipients[$('report-recipient').value];
+  const recipient = demoRecipientForOrder(reportOrderFromLocation(), $('report-recipient').value);
   const labels = [['收件姓名', recipient.name], ['手機', recipient.phone], ['7-11', recipient.seven], ['全家', recipient.family]];
   $('recipient-details').replaceChildren(...labels.map(([label, value]) => {
     const row = document.createElement('div');
@@ -442,6 +455,12 @@ function renderRecipient() {
     row.append(term, detail);
     return row;
   }));
+}
+
+function demoRecipientForOrder(entry, key) {
+  const preset = demoRecipients[key];
+  const member = entry && memberForOrder(entry);
+  return member ? { ...preset, name: member.name, phone: member.phone } : preset;
 }
 $('report-recipient').addEventListener('change', renderRecipient);
 
@@ -479,15 +498,19 @@ $('report-form').addEventListener('submit', event => {
   const entry = reportOrderFromLocation();
   if (!entry || entry.paid || entry.cancelledAt || entry.report?.status === 'pending') return;
   const previous = entry.report;
+  const previousRecipient = entry.recipientDetails;
+  const recipientKey = $('report-recipient').value;
+  entry.recipientDetails = demoRecipientForOrder(entry, recipientKey);
   entry.report = {
     amount: $('report-amount').valueAsNumber,
     tail: $('report-tail').value,
-    recipient: $('report-recipient').value,
+    recipient: recipientKey,
     status: 'pending',
     reportedAt: new Date().toISOString(),
   };
   if (!saveDemoState({ type: '回報匯款', target: entry.id, before: previous?.status === 'mismatch' ? '不符，待重填' : '未回報', after: '待核對' })) {
     entry.report = previous;
+    entry.recipientDetails = previousRecipient;
     $('report-message').textContent = '無法儲存示範回報，請重試。';
     return;
   }
@@ -501,7 +524,7 @@ $('customer-recipient-form').addEventListener('submit', event => {
   if (!entry?.report || entry.batchId || entry.cancelledAt) return;
   const previous = DemoOperations.receiver(entry, demoRecipients);
   const key = $('customer-recipient-choice').value;
-  const recipient = demoRecipients[key];
+  const recipient = demoRecipientForOrder(entry, key);
   if (!recipient) return;
   entry.report.recipient = key;
   entry.recipientDetails = { ...recipient };

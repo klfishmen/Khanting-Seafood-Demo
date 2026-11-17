@@ -248,7 +248,7 @@ function renderMetrics(id, metrics) {
 }
 
 function previewEmail(entry, confirmation) {
-  $('email-preview-recipient').textContent = demoCustomerEmail;
+  $('email-preview-recipient').textContent = memberForOrder(entry)?.email ?? demoCustomerEmail;
   $('email-preview-subject').textContent = `[示範] ${entry.id}｜${confirmation ? '付款確認' : '訂單已建立'}`;
   $('email-preview-body').textContent = confirmation
     ? `已記錄 ${entry.id} 的示範付款，金額 ${money.format(entry.total)}。`
@@ -511,7 +511,7 @@ $('batch-form').addEventListener('submit', event => {
 });
 
 $('reset-demo').addEventListener('click', () => {
-  if (confirm('重設本 Demo 的商品和成本、購物車、訂單、批次、流水帳、公告、影片與操作紀錄？') && resetDemoData()) location.reload();
+  if (confirm('重設展示資料？將恢復 10 位會員、10 項商品、20 筆訂單、4 批出貨及 12 筆會計紀錄。') && resetDemoData()) location.reload();
 });
 
 let selectedOrderId = '';
@@ -538,8 +538,10 @@ function viewOrder(entry) {
 function renderOrderDetail(entry) {
   const receiver = Ops.receiver(entry, demoRecipients);
   const batch = batches.find(item => item.id === entry.batchId);
+  const member = memberForOrder(entry);
   renderMetrics('order-detail-metrics', [
     ['訂單編號', entry.id], ['目前狀態', opsLabels[Ops.orderState(entry, batch)]],
+    ['會員', member ? member.id + '｜' + member.name : '未連結會員'],
     ['成立時間', opsTime(entry.createdAt)], ['週期', entry.weekly_cycle_id ?? '未記錄'],
     ['顧客／手機遮罩', `${receiver?.name ?? entry.customerName ?? '展示買家'}｜${Ops.maskedPhone(receiver?.phone ?? entry.customerPhone)}`],
     ['商品小計', opsMoney(entry.subtotal)], ['顧客支付運費', opsMoney(entry.shipping)],
@@ -599,7 +601,7 @@ $('admin-scenario').addEventListener('change', () => {
 
 function matchesOrder(entry, filter, query) {
   const receiver = Ops.receiver(entry, demoRecipients);
-  const searchable = [entry.id, entry.batchId, receiver?.name, entry.customerName,
+  const searchable = [entry.id, entry.batchId, entry.memberId, receiver?.name, entry.customerName,
     Ops.maskedPhone(receiver?.phone ?? entry.customerPhone), ...entry.items.map(item => item.name)].join(' ').toLowerCase();
   if (!searchable.includes(query)) return false;
   return filter === 'all' || filter === Ops.orderState(entry, batches.find(batch => batch.id === entry.batchId));
@@ -620,6 +622,7 @@ function renderOperations() {
 function renderAdmin() {
   const activeId = document.activeElement?.id;
   renderOpsSections();
+  renderMembers();
   renderRemittances();
   renderPublishing();
   renderBatches();

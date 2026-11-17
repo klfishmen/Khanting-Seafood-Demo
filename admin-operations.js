@@ -44,6 +44,59 @@ function opsScope() {
   return { from: $('ops-from').value, to: $('ops-to').value, cycle: $('ops-cycle').value };
 }
 
+function memberSummary(member) {
+  const entries = orders.filter(entry => entry.memberId === member.id);
+  const paid = entries.filter(entry => entry.paid && !entry.cancelledAt);
+  const paidIds = new Set(paid.map(entry => entry.id));
+  const refunded = Ops.sum(ledger.filter(row => row.category === 'refund' && paidIds.has(row.orderId)), row => row.amount);
+  return { entries, purchases: paid.length, spend: Ops.sum(paid, entry => entry.total) - refunded };
+}
+
+let selectedMemberId = '';
+
+function viewMember(member) {
+  selectedMemberId = member.id;
+  renderMemberDetail(member);
+  $('member-detail').showModal();
+}
+
+function renderMemberDetail(member) {
+  const summary = memberSummary(member);
+  renderMetrics('member-detail-metrics', [
+    ['會員編號', member.id], ['名稱', member.name], ['展示 Email', member.email],
+    ['手機遮罩', Ops.maskedPhone(member.phone)], ['訂單總數', summary.entries.length],
+    ['購買次數（已核帳）', summary.purchases], ['累積消費（扣已登記退款）', opsMoney(summary.spend)],
+  ]);
+  $('member-orders').replaceChildren(...(summary.entries.length ? summary.entries.map(entry => {
+    const payment = entry.paid ? '已核帳' : entry.report?.status === 'pending' ? '待核帳' :
+      entry.report?.status === 'mismatch' ? '匯款不符' : '未回報';
+    const date = Ops.date(entry.createdAt) || '日期未記錄';
+    const batch = batches.find(item => item.id === entry.batchId);
+    const shipping = batch ? batch.id + ' ' + (batch.exception ? '異常' : Ops.batchStages[batch.status]) : '未分配批次';
+    return adminRow(`${entry.id}｜${date}｜${opsMoney(entry.total)}｜${opsLabels[Ops.orderState(entry, batch)]}｜${payment}｜${shipping}`,
+      adminAction('member-order-' + entry.id, '查看訂單詳情', false, () => {
+        $('member-detail').close();
+        viewOrder(entry);
+      }));
+  }) : [adminRow('這位展示會員尚無訂單。')]));
+}
+
+function renderMembers() {
+  const query = $('member-search').value.trim().toLowerCase();
+  const matching = demoMembers.filter(member => [member.id, member.name, member.email, member.phone.slice(-4)]
+    .some(field => field.toLowerCase().includes(query)));
+  $('member-count').textContent = `顯示 ${matching.length} 位／共 ${demoMembers.length} 位展示會員`;
+  opsTable('member-list', matching.map(member => {
+    const { purchases, spend } = memberSummary(member);
+    return [member.id + '｜' + member.name, member.email, Ops.maskedPhone(member.phone), purchases,
+      opsMoney(spend), adminAction('member-' + member.id, '查看會員', false, () => viewMember(member))];
+  }), 6);
+  if ($('member-detail').open) {
+    const member = demoMembers.find(entry => entry.id === selectedMemberId);
+    if (member) renderMemberDetail(member);
+  }
+}
+
 function opsGroup(rows, key) {
   const result = new Map();
   for (const row of rows) {
@@ -190,6 +243,8 @@ function printOpsSection(id) {
 }
 
 function initAdminOperations() {
+  $('member-search').addEventListener('input', renderMembers);
+  $('close-member-detail').addEventListener('click', () => $('member-detail').close());
   opsOptions('ledger-category', Object.entries(Ops.categories));
   opsOptions('ledger-filter-category', [['receipt', opsCategory('receipt')], ...Object.entries(Ops.categories)], '全部分類');
   editLedger(null);

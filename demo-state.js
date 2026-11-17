@@ -14,10 +14,10 @@ const money = new Intl.NumberFormat('zh-TW', {
 const $ = (id) => document.getElementById(id);
 const demoStateKey = 'khanting-vibe-demo-2026-v1';
 const demoCustomerEmail = 'demo-buyer@example.invalid';
+const demoMembers = DemoFixtures.seed?.members ?? [];
 const demoBankTail = '54321';
 const demoRecipients = DemoFixtures.recipients;
 let order = null;
-let cycleSubtotal = 0;
 let scenario = "open";
 let announcements = [];
 let videos = [];
@@ -43,6 +43,7 @@ function loadDemoState() {
   } catch {
     saved = null;
   }
+  saved ??= structuredClone(DemoFixtures.seed ?? {});
   const catalog = saved?.products?.map(product => {
     if (product.image !== legacyProductImages[product.type]) return product;
     const original = initialProducts.find(item => item.id === product.id && item.type === product.type);
@@ -63,7 +64,9 @@ function loadDemoState() {
       event.target === entry.id && event.type === '人工核對匯款' && event.after === '已核對')?.time) ?? null;
     const lockedRecipient = entry.batchId ? DemoOperations.receiver(entry, demoRecipients) : null;
     const history = entry.history ?? operations.filter(event => event.target === entry.id);
-    return { ...entry, createdAt, paidAt: paidAt || null, lockedRecipient, history,
+    const memberId = entry.memberId ?? (entry.customerPhone === undefined || entry.customerPhone === demoMembers[0]?.phone
+      ? demoMembers[0]?.id : undefined);
+    return { ...entry, memberId, createdAt, paidAt: paidAt || null, lockedRecipient, history,
       weekly_cycle_id: entry.weekly_cycle_id ?? (createdAt ? DemoOperations.cycleId(createdAt) : null) };
   }));
   batches.splice(0, batches.length, ...(saved?.batches ?? []).map(batch => {
@@ -73,10 +76,13 @@ function loadDemoState() {
       history: operations.filter(event => event.target === batch.id), ...batch };
   }));
   stockLog.splice(0, stockLog.length, ...(saved?.stockLog ?? []));
-  cycleSubtotal = saved?.cycleSubtotal ?? 0;
   cart.clear();
   for (const [id, quantity] of saved?.cart ?? []) cart.set(id, quantity);
   order = orders[0] ?? null;
+}
+
+function memberForOrder(entry) {
+  return demoMembers.find(member => member.id === entry.memberId);
 }
 
 function saveDemoState(event) {
@@ -89,7 +95,7 @@ function saveDemoState(event) {
       products,
       orders: orders.map(order => order === subject ? { ...order, history: subjectHistory } : order),
       stockLog,
-      cycleSubtotal, scenario, announcements, videos, ledger, operations: history,
+      scenario, announcements, videos, ledger, operations: history,
       batches: batches.map(batch => batch === subject ? { ...batch, history: subjectHistory } : batch),
       cart: [...cart],
     }));

@@ -18,7 +18,7 @@
 <body>
   <main class="panel admin" id="admin" aria-labelledby="admin-title">
     <div class="dialog-header">
-      <h1 id="admin-title" tabindex="-1">後台營運中心 V1.0</h1>
+      <h1 id="admin-title" tabindex="-1">後台營運中心 V1.1</h1>
     </div>
     <p><strong>DEMO 展示環境，所有訂單及付款均為模擬，不接受真實交易</strong></p>
     <p class="muted">展示後台可公開開啟。所有操作只影響目前瀏覽器的合成資料。</p>
@@ -31,7 +31,7 @@
       <p id="admin-scenario-status" role="status"></p>
     </div>
     <nav class="operations-nav" aria-label="營運管理中心">
-      <a href="#overview">營運總覽</a><a href="#catalog">商品庫存</a><a href="#orders">訂單管理</a>
+      <a href="#overview">營運總覽</a><a href="#members">會員管理</a><a href="#catalog">商品庫存</a><a href="#orders">訂單管理</a>
       <a href="#payments">付款核帳</a><a href="#shipping">出貨單管理</a><a href="#profit">損益分析</a>
       <a href="#accounting">會計流水帳</a><a href="#publishing">公告影片</a><a href="#activity">操作紀錄</a>
     </nav>
@@ -49,6 +49,17 @@
         <dl id="admin-summary" class="totals"></dl>
         <h4>庫存警示（剩餘 2 份以下）</h4><ul id="ops-low-stock" class="admin-list"></ul>
         <h4>最近操作</h4><ul id="ops-recent" class="admin-list"></ul>
+      </section>
+      <section class="admin-section ops-wide" id="members" aria-labelledby="member-title">
+        <h3 id="member-title">會員管理</h3>
+        <p class="muted">展示資料。購買次數計入已核帳訂單，累積消費以已核帳含運金額扣除已登記退款。</p>
+        <div class="ops-filters"><label>搜尋名稱、會員編號、Email 或手機後四碼
+          <input id="member-search" type="search"></label></div>
+        <p id="member-count" role="status"></p>
+        <div class="table-scroll" tabindex="0" aria-label="會員列表">
+          <table class="ops-table"><thead><tr><th>會員</th><th>Email</th><th>手機遮罩</th><th>購買次數</th><th>累積消費</th><th>操作</th></tr></thead>
+          <tbody id="member-list"></tbody></table>
+        </div>
       </section>
       <section class="admin-section admin-catalog" id="catalog" aria-labelledby="admin-stock-title">
         <div class="dialog-header">
@@ -173,6 +184,11 @@
     </div>
     <p id="admin-status" role="status"></p>
   </main>
+  <dialog class="panel product-editor" id="member-detail" aria-labelledby="member-detail-title">
+    <div class="dialog-header"><h2 id="member-detail-title">會員詳情</h2><button type="button" class="secondary" id="close-member-detail">關閉</button></div>
+    <dl id="member-detail-metrics" class="totals"></dl>
+    <h3>歷史訂單</h3><ul id="member-orders" class="admin-list"></ul>
+  </dialog>
   <dialog class="panel product-editor" id="order-detail" aria-labelledby="order-detail-title">
     <div class="dialog-header"><h2 id="order-detail-title">示範訂單詳情</h2><button type="button" class="secondary" id="close-order-detail">關閉</button></div>
     <dl id="order-detail-metrics" class="totals"></dl>
