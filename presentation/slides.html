@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
+  <title>八頁成果簡報｜崁仔頂小商人</title>
+  <link rel="stylesheet" href="./presentation.css">
+  <script src="./slides-transcript.js" defer></script>
+  <script src="./slides.js" defer></script>
+</head>
+<body>
+  <main class="viewer">
+    <a href="./">返回成果展示首頁</a>
+    <h1>八頁成果簡報</h1>
+    <section id="player" aria-label="簡報播放器" tabindex="-1">
+      <img id="slide-image" src="./slides/slide-1.png" alt="">
+      <div class="controls">
+        <button id="previous" type="button">上一頁</button>
+        <p id="page-status" aria-live="polite"></p>
+        <button id="next" type="button">下一頁</button>
+        <button id="fullscreen" type="button">全螢幕</button>
+      </div>
+      <p id="player-message" role="status"></p>
+      <section id="history-links" class="slide-notes" hidden>
+        <a href="./history.html" target="_blank" rel="noopener">查看完整改版歷程與測試紀錄（另開分頁）</a>
+        <p>10 月底開始專案 → 11/04 第一版雛形 → 11/07 改用 Codex，建立規格與版本管理 → V1.4～V1.9 修訂規則、資料模型、程式與測試 → 11/17 獨立 Demo 發布與迭代。</p>
+        <p>隔離測試通過不代表正式環境驗收完成，也不代表正式網站已經上線。</p>
+      </section>
+      <nav id="demo-links" class="slide-notes" aria-label="操作 Demo" hidden>
+        <a href="../" target="_blank" rel="noopener">Demo 前台（另開分頁）</a>
+        <a href="../admin.html" target="_blank" rel="noopener">Demo 後台（另開分頁）</a>
+      </nav>
+      <details class="slide-notes">
+        <summary>閱讀本頁文字</summary>
+        <ul id="slide-transcript"></ul>
+      </details>
+    </section>
+    <noscript>請啟用 JavaScript 使用簡報控制，或<a href="./">返回首頁下載 PowerPoint</a>。</noscript>
+  </main>
+</body>
+</html>

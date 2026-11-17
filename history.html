@@ -19,12 +19,18 @@
     <section class="panel history-intro" aria-labelledby="history-title">
       <h1 id="history-title">從海鮮團購雛形到可驗證的展示</h1>
       <p>Vibe Coding 課程成果｜崁仔頂小商人</p>
-      <p>這份公開摘要記錄規格怎麼從商品與購物車，演進到週期、人工核帳和出貨條件。歷史隔離測試通過不代表正式網站已上線。</p>
+      <p>這份公開摘要記錄規格怎麼從商品與購物車，演進到週期、人工核帳和出貨條件。隔離測試通過不代表正式環境驗收完成，也不代表正式網站已經上線。</p>
       <div class="history-copy">
         <label for="history-url">簡報可引用的公開網址</label>
         <div><input id="history-url" type="url" readonly value="https://klfishmen.github.io/Khanting-Seafood-Demo/history.html"><button type="button" id="copy-history">複製網址</button></div>
         <p id="history-copy-status" role="status"></p>
       </div>
+    </section>
+    <section class="panel" aria-labelledby="models-title">
+      <h2 id="models-title">營運規則與資料模型</h2>
+      <p>每週二中午開新一期，週二午夜至中午可瀏覽與查單，暫停成立新訂單。現流庫存隨成功成立的訂單扣除。取消與退款的庫存調整由管理員決定並留紀錄。</p>
+      <p>顧客回報匯款後先待核對，管理員人工確認後才標記已付款。符合付款及出貨條件的訂單才可正式分配批次。</p>
+      <p>資料模型沿 V1.0、V1.1、V1.2 持續修訂。V1.2 記錄商品與庫存、顧客識別、訂單與付款、週期結算等資料，另有現流、付款與影片的補充版本。</p>
     </section>
     <section class="panel" id="timeline" aria-labelledby="timeline-title">
       <h2 id="timeline-title">開發時間線</h2>
@@ -57,10 +63,16 @@
         <section id="early-evidence"><h3>規格與早期 Git</h3><p>V1.7 版次沿革、V1.5／V1.6 留存規格和本機提交都已核對。V1.4 原始版缺口與早期精確驗收仍待補證；此頁只提供可公開的摘要。</p></section>
         <section id="fresh-evidence"><h3>現流開賣與售罄</h3><p>11/13 Phase 2E-4 報告記載隔離回歸 141/141，瀏覽器案例 1/1。同期人工驗收仍有時間邊界與流程阻擋，分開記錄。</p></section>
         <section><h3>付款與影片</h3><p>11/15 Phase 2E-5N-12 記載影片庫 44/44、全套隔離回歸 256/256、顧客補充回歸 10/10。顧客付款回報在隔離測試中維持待核對，人工核對才改變付款狀態。</p></section>
-        <section><h3>公開展示紀錄</h3><p><a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/cb8550ac4952b32e60d080d501687028a754aa0c">首次公開 Demo</a> · <a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/9f3fa7cb84874572ca722482e6749ce2c7319319">首頁間距修正</a></p></section>
+        <section><h3>公開展示紀錄</h3><p><a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/cb8550ac4952b32e60d080d501687028a754aa0c">首次公開 Demo</a> · <a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/9f3fa7cb84874572ca722482e6749ce2c7319319">首頁間距修正</a> · <a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/e4b7ced44e0e70f1d745bf8220a27dcfb57127d8">營運後台與版本歷程</a></p></section>
       </div>
     </section>
+    <section class="panel" aria-labelledby="reflection-title">
+      <h2 id="reflection-title">開發心得與待核對項目</h2>
+      <p>第一版雛形很快可見，後續花時間的是把市場作業中的例外寫成規格，並逐項測試庫存、付款與出貨流程。</p>
+      <p>V1.4 留存檔的檔名與內文版號不一致。10 月底、11/04 的早期原型證據，以及各版與個別提交的一對一關係仍待核對。</p>
+    </section>
     <section class="panel history-actions" aria-label="返回展示">
+      <a href="./presentation/" class="button-link">返回成果展示首頁</a>
       <a href="./" class="button-link">操作展示首頁</a>
       <a href="./admin.html" class="button-link secondary">開啟展示後台</a>
     </section>

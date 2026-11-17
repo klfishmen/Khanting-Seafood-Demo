@@ -1,0 +1,41 @@
+:root {
+  color: #142d3a;
+  background: #f4f0e7;
+  font: 100%/1.55 system-ui, "Microsoft JhengHei", sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; }
+main { width: min(100% - 2rem, 68rem); margin: 2rem auto; }
+h1 { margin: .25em 0; font-size: clamp(1.65rem, 4vw, 3rem); line-height: 1.17; }
+.hub header { padding: clamp(1.25rem, 5vw, 3rem); background: #142d3a; color: #f4f0e7; border-bottom: .35rem solid #e6a052; }
+.subtitle { margin-bottom: 0; font-size: clamp(1rem, 2.5vw, 1.35rem); }
+.entries { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1.25rem 0; }
+a { color: #155e60; font-weight: 700; }
+.entries > a, .demo-entry { border: 1px solid #99acaa; border-radius: .5rem; padding: 1.15rem; background: #fffdf8; }
+.entries > a { display: flex; align-items: center; }
+.entries > a:hover, .entries > a:focus-visible { border-color: #247f80; }
+.demo-entry h2 { margin: 0 0 .4rem; font-size: 1rem; }
+.demo-entry a + a, #demo-links a + a { margin-inline-start: 1rem; }
+.notice { margin-block: 1.25rem; }
+.viewer > h1 { margin-block: .4em; }
+#player { padding: clamp(.45rem, 2vw, 1rem); background: #142d3a; color: #f4f0e7; border-radius: .5rem; }
+#slide-image { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; display: block; margin-inline: auto; }
+.controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .5rem; margin-top: .65rem; }
+.controls p { margin: 0; font-variant-numeric: tabular-nums; }
+button { border: 0; border-radius: .35rem; background: #f4f0e7; color: #142d3a; min-height: 2.6rem; padding: .35rem .7rem; font: inherit; cursor: pointer; }
+button:disabled { opacity: .55; cursor: default; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: .18rem solid #e6a052; outline-offset: .18rem; }
+.slide-notes { border-top: 1px solid #5c737d; margin: .8rem 0 0; padding: .75rem .4rem .2rem; overflow-wrap: anywhere; }
+.slide-notes a { color: #ffd4a4; }
+.slide-notes p { margin: .4rem 0; }
+summary { cursor: pointer; }
+#player-message:empty { display: none; }
+#player:fullscreen { overflow: auto; }
+#player:fullscreen #slide-image { max-height: calc(100dvh - 9rem); }
+@media (max-width: 36rem) {
+  main { width: calc(100% - 1.25rem); margin-block: 1rem; }
+  .entries { grid-template-columns: 1fr; }
+  .controls { gap: .35rem; }
+  .controls button { padding-inline: .45rem; }
+}
