@@ -18,10 +18,21 @@ const demoRecipients = DemoFixtures.recipients;
 let order = null;
 let cycleSubtotal = 0;
 let scenario = "open";
-let announcement = DemoFixtures.announcement;
+let announcements = [];
 let videos = [];
+let operations = [];
 const batches = [];
 const demoWelcomeKey = demoStateKey + "-welcome";
+const localVideoLinks = {
+  'market-demo.mp4': '完整示範（9 秒）',
+  'market-demo.mp4#t=0,3': '片段：逛魚市（0–3 秒）',
+  'market-demo.mp4#t=3,6': '片段：加入購物車（3–6 秒）',
+  'market-demo.mp4#t=6,9': '片段：建立訂單（6–9 秒）',
+};
+
+function videoHref(asset) {
+  return './' + (Object.hasOwn(localVideoLinks, asset) ? asset : 'market-demo.mp4');
+}
 
 function loadDemoState() {
   let saved;
@@ -32,8 +43,11 @@ function loadDemoState() {
   }
   products.splice(0, products.length, ...(saved?.products ?? initialProducts.map(product => ({ status: "active", description: "", ...product }))));
   scenario = saved?.scenario ?? "open";
-  announcement = saved?.announcement ?? DemoFixtures.announcement;
-  videos = saved?.videos ?? structuredClone(DemoFixtures.videos);
+  announcements = saved?.announcements ?? [{
+    id: 'market-update', text: saved?.announcement ?? DemoFixtures.announcement, published: true,
+  }];
+  videos = (saved?.videos ?? DemoFixtures.videos).map((video, index) => ({ id: 'video-original-' + index, ...video }));
+  operations = saved?.operations ?? [];
   batches.splice(0, batches.length, ...(saved?.batches ?? []));
   orders.splice(0, orders.length, ...(saved?.orders ?? []));
   stockLog.splice(0, stockLog.length, ...(saved?.stockLog ?? []));
@@ -43,15 +57,17 @@ function loadDemoState() {
   order = orders[0] ?? null;
 }
 
-function saveDemoState() {
+function saveDemoState(event) {
+  const history = event ? [{ time: new Date().toISOString(), ...event }, ...operations].slice(0, 100) : operations;
   try {
     localStorage.setItem(demoStateKey, JSON.stringify({
       products,
       orders,
       stockLog,
-      cycleSubtotal, scenario, announcement, videos, batches,
+      cycleSubtotal, scenario, announcements, videos, batches, operations: history,
       cart: [...cart],
     }));
+    operations = history;
     return true;
   } catch {
     return false;

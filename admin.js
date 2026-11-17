@@ -32,7 +32,9 @@ function saveProductRecord(product, previous) {
   if (stockChanged) {
     stockLog.unshift(`${product.name} ${previous?.stock ?? 0} → ${product.stock}（${previous ? '庫存調整' : '初始庫存'}）`);
   }
-  if (saveDemoState()) return true;
+  const summary = item => item ? `${item.name}・${statusLabels[item.status]}・${money.format(item.price)}・庫存 ${item.stock}` : '尚無商品';
+  const type = !previous ? '新增商品' : previous.status !== product.status ? '商品狀態' : previous.stock !== product.stock ? '調整庫存' : '編輯商品';
+  if (saveDemoState({ type, target: product.name, before: summary(previous), after: summary(product) })) return true;
   products.splice(position, 1, ...(previous ? [previous] : []));
   if (stockChanged) stockLog.shift();
   return false;
@@ -183,6 +185,8 @@ function makeProductRow(product) {
   if (product.listPrice) info.append(`｜原價 ${money.format(product.listPrice)}`);
   info.append(`｜單位成本 ${product.unitCost === null ? '未填寫' : money.format(product.unitCost)}`);
   const selected = cart.get(product.id) ?? 0;
+  const available = Math.max(0, demoStock(product) - selected);
+  if (product.status === 'active' && available === 0) info.append('｜售罄');
   if (selected) info.append(`｜購物車已選 ${selected} 份｜剩餘 ${product.stock - selected} 份`);
   row.append(heading, info);
   if (product.description) {
@@ -301,7 +305,7 @@ function reconcile(entry) {
   const matched = entry.report.amount === entry.total && entry.report.tail === demoBankTail;
   entry.report.status = matched ? 'verified' : 'mismatch';
   entry.paid = matched;
-  if (!saveDemoState()) {
+  if (!saveDemoState({ type: '人工核對匯款', target: entry.id, before: '待核對', after: matched ? '已核對' : '不符，待重填' })) {
     entry.report.status = 'pending';
     entry.paid = false;
     $('admin-status').textContent = '無法儲存核對結果。';
@@ -320,35 +324,113 @@ function renderRemittances() {
   }) : [adminRow('目前沒有匯款回報。')]));
 }
 
-function renderPublishing() {
-  if (document.activeElement !== $('admin-announcement')) $('admin-announcement').value = announcement;
-  $('admin-videos').replaceChildren(...videos.map((video, index) =>
-    adminRow(`${video.title}｜${video.published ? '已發布' : '已隱藏'}`,
-      adminAction(`toggle-video-${index}`, video.published ? '隱藏' : '發布', false, () => {
-        video.published = !video.published;
-        saveDemoState();
-        renderAdmin();
-      }))));
-  $('video-form').querySelector('button').disabled = videos.length >= 3;
+let editingAnnouncement = announcements[0]?.id ?? null;
+let editingVideo = null;
+const visibility = published => published ? '已發布' : '已隱藏';
+const videoSummary = entry => `${entry.title}｜${localVideoLinks[entry.asset]}｜${visibility(entry.published)}`;
+const announcementSummary = entry => `${visibility(entry.published)}｜${entry.text}`;
+
+function saveAdminChange(type, target, before, after) {
+  if (saveDemoState({ type, target, before, after })) return true;
+  loadDemoState();
+  $('admin-status').textContent = '無法儲存展示資料，已還原上一次儲存的狀態。';
+  return false;
 }
+
+function editAnnouncement(entry) {
+  editingAnnouncement = entry?.id ?? null;
+  $('admin-announcement').value = entry?.text ?? '';
+  $('admin-announcement').focus();
+}
+
+function editVideo(entry) {
+  editingVideo = entry?.id ?? null;
+  $('video-name').value = entry?.title ?? '';
+  $('video-asset').value = entry?.asset ?? 'market-demo.mp4';
+  renderPublishing();
+  $('video-name').focus();
+}
+
+function publishingActions(...buttons) {
+  const actions = document.createElement('div');
+  actions.className = 'admin-actions';
+  actions.append(...buttons);
+  return actions;
+}
+
+function moveVideo(index, direction) {
+  const destination = index + direction;
+  if (destination < 0 || destination >= videos.length) return;
+  const entry = videos[index];
+  [videos[index], videos[destination]] = [videos[destination], videos[index]];
+  saveAdminChange('影片排序', entry.title, String(index + 1), String(destination + 1));
+  renderAdmin();
+}
+
+function renderPublishing() {
+  $('admin-announcements').replaceChildren(...announcements.map((entry, index) =>
+    adminRow(announcementSummary(entry), publishingActions(
+      adminAction(`edit-announcement-${index}`, '編輯公告', false, () => editAnnouncement(entry)),
+      adminAction(`toggle-announcement-${index}`, entry.published ? '隱藏公告' : '發布公告', false, () => {
+        const before = visibility(entry.published);
+        entry.published = !entry.published;
+        saveAdminChange('公告狀態', '首頁公告', before, visibility(entry.published));
+        renderAdmin();
+      })))));
+  $('admin-videos').replaceChildren(...videos.map((entry, index) => {
+    const row = adminRow(`${index + 1}. ${videoSummary(entry)}`, publishingActions(
+      adminAction(`edit-video-${index}`, '編輯影片', false, () => editVideo(entry)),
+      adminAction(`video-up-${index}`, '上移', index === 0, () => moveVideo(index, -1)),
+      adminAction(`video-down-${index}`, '下移', index === videos.length - 1, () => moveVideo(index, 1)),
+      adminAction(`toggle-video-${index}`, entry.published ? '隱藏' : '發布', false, () => {
+        const before = visibility(entry.published);
+        entry.published = !entry.published;
+        saveAdminChange('影片狀態', entry.title, before, visibility(entry.published));
+        renderAdmin();
+      })));
+    const link = document.createElement('a');
+    link.href = videoHref(entry.asset);
+    link.textContent = '開啟本機影片';
+    row.append(link);
+    return row;
+  }));
+  $('save-video').disabled = !editingVideo && videos.length >= 3;
+  $('save-video').textContent = editingVideo ? '儲存影片' : '新增展示片段';
+  $('cancel-video-edit').hidden = !editingVideo;
+}
+
+$('admin-announcement').value = announcements[0]?.text ?? '';
+$('new-announcement').addEventListener('click', () => editAnnouncement(null));
+$('video-asset').replaceChildren(...Object.entries(localVideoLinks).map(([asset, label]) => new Option(label, asset)));
+$('cancel-video-edit').addEventListener('click', () => editVideo(null));
 
 $('announcement-form').addEventListener('submit', event => {
   event.preventDefault();
   const value = $('admin-announcement').value.trim();
   if (!value) return;
-  announcement = value;
-  saveDemoState();
+  const existing = announcements.find(entry => entry.id === editingAnnouncement);
+  if (editingAnnouncement && !existing) return;
+  const before = existing ? announcementSummary(existing) : '尚無公告';
+  const entry = existing ?? { id: crypto.randomUUID(), published: true };
+  entry.text = value;
+  if (!existing) announcements.push(entry);
+  const saved = saveAdminChange(existing ? '修改公告' : '新增公告', '首頁公告', before, announcementSummary(entry));
+  if (saved) editingAnnouncement = entry.id;
   renderAdmin();
-  $('admin-status').textContent = '公告已更新。';
+  if (saved) $('admin-status').textContent = '公告已更新。';
 });
 
 $('video-form').addEventListener('submit', event => {
   event.preventDefault();
   const title = $('video-name').value.trim();
-  if (!title || videos.length >= 3) return;
-  videos.push({ title, description: '使用同一支本機合成片段示範影片管理。', asset: 'market-demo.mp4', published: true });
-  saveDemoState();
-  $('video-name').value = '';
+  const asset = $('video-asset').value;
+  const existing = videos.find(entry => entry.id === editingVideo);
+  if (!title || !Object.hasOwn(localVideoLinks, asset) || (editingVideo && !existing) || (!existing && videos.length >= 3)) return;
+  const before = existing ? videoSummary(existing) : '尚無影片';
+  const entry = existing ?? { id: crypto.randomUUID(), description: '本機合成影片，供展示操作。', published: true };
+  Object.assign(entry, { title, asset });
+  if (!existing) videos.push(entry);
+  if (saveAdminChange(existing ? '編輯影片' : '新增影片', title, before, videoSummary(entry))) editVideo(null);
   renderAdmin();
 });
 
@@ -367,14 +449,60 @@ $('batch-form').addEventListener('submit', event => {
   event.preventDefault();
   const batch = { id: `BATCH-${String(batches.length + 1).padStart(3, '0')}` };
   batches.push(batch);
-  saveDemoState();
+  if (!saveAdminChange('建立出貨批次', batch.id, '尚無批次', '可分配')) return;
   renderAdmin();
   $('batch-select').value = batch.id;
 });
 
 $('reset-demo').addEventListener('click', () => {
-  if (confirm('重設本 Demo 的商品、購物車、訂單與出貨批次？') && resetDemoData()) location.reload();
+  if (confirm('重設本 Demo 的商品、購物車、訂單、公告、影片與操作紀錄？') && resetDemoData()) location.reload();
 });
+
+function viewOrder(entry) {
+  renderMetrics('order-detail-metrics', [
+    ['訂單編號', entry.id], ['目前狀態', demoOrderStatus(entry)],
+    ['應付合計', money.format(entry.total)], ['出貨批次', entry.batchId ?? '尚未分配'],
+    ['退款異常', entry.refundBlocked ? '已標記，阻擋出貨' : '無'],
+    ['匯款回報', entry.report?.status === 'pending' ? '待核對' : entry.report ? demoOrderStatus(entry) : '未回報'],
+  ]);
+  $('order-detail-items').replaceChildren(...entry.items.map(item =>
+    adminRow(`${item.name} × ${item.quantity}｜${Number.isFinite(item.unitPrice) ? money.format(item.unitPrice) + '／份' : '未記錄單價'}`)));
+  $('order-detail').showModal();
+}
+$('close-order-detail').addEventListener('click', () => $('order-detail').close());
+$('admin-order-search').addEventListener('input', renderAdmin);
+$('admin-order-filter').addEventListener('change', renderAdmin);
+$('admin-scenario').addEventListener('change', () => {
+  const before = DemoRules.cycle(scenario).title;
+  scenario = $('admin-scenario').value;
+  saveAdminChange('切換情境', '展示時鐘', before, DemoRules.cycle(scenario).title);
+  renderAdmin();
+});
+
+function matchesOrder(entry, filter, query) {
+  const searchable = [entry.id, entry.batchId, ...entry.items.map(item => item.name)].join(' ').toLowerCase();
+  if (!searchable.includes(query)) return false;
+  switch (filter) {
+    case 'unpaid': return !entry.paid;
+    case 'pending': return entry.report?.status === 'pending';
+    case 'paid': return entry.paid;
+    case 'blocked': return Boolean(entry.refundBlocked);
+    case 'shipped': return entry.shipped;
+    default: return true;
+  }
+}
+
+const operationTime = new Intl.DateTimeFormat('zh-TW', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Asia/Taipei' });
+function renderOperations() {
+  $('admin-operations').replaceChildren(...(operations.length ? operations.map(entry => {
+    const row = adminRow(`${entry.type}｜${entry.target}｜${entry.before} → ${entry.after}`);
+    const time = document.createElement('time');
+    time.dateTime = entry.time;
+    time.textContent = operationTime.format(new Date(entry.time));
+    row.prepend(time);
+    return row;
+  }) : [adminRow('目前沒有展示操作紀錄。')]));
+}
 
 function renderAdmin() {
   const activeId = document.activeElement?.id;
@@ -389,19 +517,26 @@ function renderAdmin() {
   renderRemittances();
   renderPublishing();
   renderBatches();
+  renderOperations();
+  $('admin-scenario').value = scenario;
+  $('admin-scenario-status').textContent = DemoRules.cycle(scenario).title;
 
   const type = $('product-filter').value;
   const status = $('product-status-filter').value;
-  const catalog = products.filter(product => (type === 'all' || product.type === type) && (status === 'all' || product.status === status));
+  const catalog = products.filter(product => (type === 'all' || product.type === type) &&
+    (status === 'all' || product.status === status ||
+      (status === 'soldout' && product.status === 'active' && demoStock(product) <= (cart.get(product.id) ?? 0))));
   $('admin-stock').replaceChildren(...(catalog.length ? catalog.map(makeProductRow) : [adminRow('沒有符合篩選條件的商品。')]));
   $('admin-stock-log').replaceChildren(...(stockLog.length ? stockLog : ['目前沒有庫存異動。']).map(text => adminRow(text)));
 
-  $('admin-orders').replaceChildren(...(orders.length ? orders.map(entry => {
+  const query = $('admin-order-search').value.trim().toLowerCase();
+  const filtered = orders.filter(entry => matchesOrder(entry, $('admin-order-filter').value, query));
+  $('admin-orders').replaceChildren(...(filtered.length ? filtered.map(entry => {
     const details = entry.items.map(item => `${item.name} × ${item.quantity}`).join('、');
     const ship = adminAction(`ship-${entry.id}`, '標記模擬出貨', !DemoRules.canShip(entry), () => {
       if (!DemoRules.canShip(entry)) return;
       entry.shipped = true;
-      saveDemoState();
+      if (!saveAdminChange('標記出貨', entry.id, '已分配', '已模擬出貨')) return;
       renderAdmin();
       $('admin-status').textContent = `${entry.id} 已標記模擬出貨。`;
     });
@@ -412,18 +547,19 @@ function renderAdmin() {
       const batchId = $('batch-select').value;
       if (DemoRules.shipmentProblem(entry) || !batches.some(batch => batch.id === batchId)) return;
       entry.batchId = batchId;
-      saveDemoState();
+      saveAdminChange('分配出貨批次', entry.id, '尚未分配', batchId);
       renderAdmin();
     });
     const refund = adminAction(`refund-${entry.id}`, '標記退款異常', entry.refundBlocked || entry.shipped, () => {
       entry.refundBlocked = true;
-      saveDemoState();
+      saveAdminChange('退款異常', entry.id, '可依條件分配', '阻擋出貨');
       renderAdmin();
     });
     const canPrint = Boolean(entry.batchId && entry.paid && !entry.refundBlocked && entry.report?.status === 'verified');
-    actions.append(assign, refund, adminAction(`print-${entry.id}`, '出貨單預覽', !canPrint, () => previewShipping(entry)), ship);
+    actions.append(adminAction(`detail-${entry.id}`, '查看詳情', false, () => viewOrder(entry)), assign, refund,
+      adminAction(`print-${entry.id}`, '出貨單預覽', !canPrint, () => previewShipping(entry)), ship);
     return adminRow(`${entry.id} · ${demoOrderStatus(entry)} · ${money.format(entry.total)}｜${details}｜${entry.batchId ?? '尚未分配'}${problem ? '｜' + problem : ''}`, actions);
-  }) : [adminRow('目前沒有示範訂單。')]));
+  }) : [adminRow(orders.length ? '找不到符合條件的訂單。' : '目前沒有示範訂單。')]));
   const notifications = orders.flatMap(entry => {
     const rows = [];
     if (entry.reportToken) rows.push(adminRow(`${entry.id} · 訂單成立信`,

@@ -21,9 +21,18 @@
     <p><strong>DEMO 展示環境，所有訂單及付款均為模擬，不接受真實交易</strong></p>
     <p class="muted">展示後台可公開開啟。所有操作只影響目前瀏覽器的合成資料。</p>
     <p><a href="./index.html" class="button-link secondary">返回展示首頁</a> <button type="button" id="reset-demo">重設展示資料</button></p>
+    <div class="scenario-controls admin-scenario">
+      <label for="admin-scenario">展示情境</label>
+      <select id="admin-scenario" aria-describedby="admin-scenario-status">
+        <option value="open">開賣中</option><option value="settlement">結算暫停接單</option><option value="soldout">現流售罄</option><option value="free">免運達標</option>
+      </select>
+      <p id="admin-scenario-status" role="status"></p>
+    </div>
     <div class="admin-grid" id="admin-grid">
       <section class="admin-section" aria-labelledby="admin-content-title">
         <h3 id="admin-content-title">公告與影片</h3>
+        <div class="admin-actions"><button type="button" id="new-announcement" class="secondary">新增公告</button></div>
+        <ul id="admin-announcements" class="admin-list" aria-label="公告列表"></ul>
         <form class="checkout-actions" id="announcement-form">
           <label for="admin-announcement">首頁公告</label>
           <textarea id="admin-announcement" maxlength="240" rows="3" required></textarea>
@@ -32,9 +41,12 @@
         <h4>影片展示（最多三筆）</h4>
         <ul id="admin-videos" class="admin-list"></ul>
         <form class="checkout-actions" id="video-form">
-          <label for="video-name">新增本機展示片段標題</label>
+          <label for="video-name">影片標題</label>
           <input id="video-name" maxlength="60" required>
-          <button type="submit">新增展示片段</button>
+          <label for="video-asset">本機影片連結</label>
+          <select id="video-asset"></select>
+          <button type="submit" id="save-video">新增展示片段</button>
+          <button type="button" class="secondary" id="cancel-video-edit" hidden>取消編輯</button>
         </form>
       </section>
       <section class="admin-section" aria-labelledby="admin-summary-title">
@@ -63,7 +75,7 @@
         <p class="muted">首頁現流最多展示兩款，可售品項優先。圖片請使用合成商品素材。</p>
         <div class="catalog-filters">
           <label>分類<select id="product-filter"><option value="all">全部商品</option><option value="fresh">現流</option><option value="frozen">冷凍</option></select></label>
-          <label>狀態<select id="product-status-filter"><option value="all">全部狀態</option><option value="active">已上架</option><option value="draft">草稿</option><option value="paused">已下架</option><option value="stopped">停售</option></select></label>
+          <label>狀態<select id="product-status-filter"><option value="all">全部狀態</option><option value="active">已上架</option><option value="draft">草稿</option><option value="paused">已下架</option><option value="stopped">停售</option><option value="soldout">售罄</option></select></label>
         </div>
         <ul id="admin-stock" class="admin-list"></ul>
         <h4>庫存異動</h4>
@@ -71,6 +83,14 @@
       </section>
       <section class="admin-section" aria-labelledby="admin-orders-title">
         <h3 id="admin-orders-title">訂單與模擬出貨</h3>
+        <div class="checkout-actions">
+          <label for="admin-order-search">依訂單編號、商品或批次搜尋</label>
+          <input id="admin-order-search" type="search">
+          <label for="admin-order-filter">訂單狀態</label>
+          <select id="admin-order-filter">
+            <option value="all">全部</option><option value="unpaid">尚未核對</option><option value="pending">待核對</option><option value="paid">已付款</option><option value="blocked">退款異常</option><option value="shipped">已出貨</option>
+          </select>
+        </div>
         <ul id="admin-orders" class="admin-list"></ul>
         <form id="batch-form" class="checkout-actions">
           <label for="batch-select">出貨批次</label>
@@ -79,9 +99,19 @@
         </form>
         <ul id="admin-batches" class="admin-list" aria-label="出貨批次清單"></ul>
       </section>
+      <section class="admin-section" aria-labelledby="admin-operations-title">
+        <h3 id="admin-operations-title">展示操作紀錄</h3>
+        <p class="muted">最多保留 100 筆。僅存於此瀏覽器，可隨展示資料重設。</p>
+        <ul id="admin-operations" class="admin-list"></ul>
+      </section>
     </div>
-    <p id="admin-status" role="status" class="sr-only"></p>
+    <p id="admin-status" role="status"></p>
   </main>
+  <dialog class="panel product-editor" id="order-detail" aria-labelledby="order-detail-title">
+    <div class="dialog-header"><h2 id="order-detail-title">示範訂單詳情</h2><button type="button" class="secondary" id="close-order-detail">關閉</button></div>
+    <dl id="order-detail-metrics" class="totals"></dl>
+    <ul id="order-detail-items" class="admin-list"></ul>
+  </dialog>
   <dialog class="panel product-editor" id="product-editor" aria-labelledby="product-editor-title">
     <div class="dialog-header">
       <h2 id="product-editor-title">商品資料</h2>

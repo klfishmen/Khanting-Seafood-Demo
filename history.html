@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; worker-src 'none'">
+  <meta name="description" content="崁仔頂小商人 Vibe Coding 課程展示：規格演進、測試里程碑與公開 Demo。">
+  <title>開發歷程｜崁仔頂小商人 Demo</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./history.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">鮮</span><span>崁仔頂小商人<small>開發歷程</small></span></a>
+    <nav aria-label="歷程導覽"><a href="#timeline">時間線</a><a href="#versions">版本比較</a><a href="#milestones">驗收證據</a></nav>
+  </header>
+  <main class="history">
+    <section class="panel history-intro" aria-labelledby="history-title">
+      <h1 id="history-title">從海鮮團購雛形到可驗證的展示</h1>
+      <p>Vibe Coding 課程成果｜崁仔頂小商人</p>
+      <p>這份公開摘要記錄規格怎麼從商品與購物車，演進到週期、人工核帳和出貨條件。歷史隔離測試通過不代表正式網站已上線。</p>
+      <div class="history-copy">
+        <label for="history-url">簡報可引用的公開網址</label>
+        <div><input id="history-url" type="url" readonly value="https://klfishmen.github.io/Khanting-Seafood-Demo/history.html"><button type="button" id="copy-history">複製網址</button></div>
+        <p id="history-copy-status" role="status"></p>
+      </div>
+    </section>
+    <section class="panel" id="timeline" aria-labelledby="timeline-title">
+      <h2 id="timeline-title">開發時間線</h2>
+      <ol class="timeline">
+        <li><strong>2026 年 10 月底～11 月 4 日</strong><p>提供的整理稿記載 AI 開發起點與第一個雛形。原始提交與畫面日期待核對。</p></li>
+        <li><strong>11 月 7 日 · V1.7 整合規格</strong><p>將首頁、營運規則、後台規劃與版本治理集中成可逐項驗收的基準。</p></li>
+        <li><strong>11 月 9 日 · 本機開發基線</strong><p>現存 Git 歷史可追到庫存、週期運費、訪客識別及單筆查單的演進。提交紀錄與各版規格並非逐版一一對應。</p></li>
+        <li><strong>11 月 10～13 日 · V1.8／V1.9</strong><p>確認首頁商品展示與預告，簡化現流開賣條件，並以隔離案例驗證未到期、開賣、售罄與冷凍回歸。</p></li>
+        <li><strong>11 月 15 日 · 顧客流程與影片驗收</strong><p>隔離環境完成結帳流程和影片庫驗收；歷史報告保留正式環境與人工驗收限制。</p></li>
+        <li><strong>11 月 17 日 · 獨立展示發布</strong><p>發布合成資料的靜態 Demo，接著修正桌機首頁共用列高造成的空白。</p></li>
+      </ol>
+    </section>
+    <section class="panel" id="versions" aria-labelledby="versions-title">
+      <h2 id="versions-title">V1.4–V1.9 版本比較</h2>
+      <table class="history-table">
+        <thead><tr><th scope="col">版本／日期</th><th scope="col">改版原因與功能</th><th scope="col">營運規則變化</th><th scope="col">證據與結果</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">V1.4 <span>日期待核對</span></th><td data-label="功能">早期網站與團購流程基礎，獨立版逐項增修待核對。</td><td data-label="規則">留存檔案的檔名與內文版號不一致，無法把內文條款認定為 V1.4。</td><td data-label="證據"><a href="#early-evidence">早期版本證據</a>；專屬測試待核對。</td></tr>
+          <tr><th scope="row">V1.5 <span>2026 年 11 月初</span></th><td data-label="功能">補齊數量選擇、現流庫存與扣量回饋，以及團購流程規格。</td><td data-label="規則">現流與冷凍採不同數量上限。上架、結算與週期切換分開，未付款訂單納入當期累積。</td><td data-label="證據"><a href="#early-evidence">規格摘要</a>；精確日期與專屬測試待核對。</td></tr>
+          <tr><th scope="row">V1.6 <span>2026-11-06</span></th><td data-label="功能">將每日上架、運費、出貨、取消退款與跨週例外整合進營運規格。</td><td data-label="規則">區分公開營運原則和管理者個案處理；取消與退款的庫存調整需另外處理。</td><td data-label="證據"><a href="#early-evidence">整合版沿革</a>；專屬功能測試待核對。</td></tr>
+          <tr><th scope="row">V1.7 <span>2026-11-07</span></th><td data-label="功能">彙整既有決策、桌機左右雙欄、營運中心及後續擴充方向，形成整合基準。</td><td data-label="規則">區分已確認、提案與未來功能，並保留例行和手動上架彈性。</td><td data-label="證據"><a href="#early-evidence">主規格整理日與審閱記錄</a>；整站驗收待核對。</td></tr>
+          <tr><th scope="row">V1.8 <span>2026-11-10</span></th><td data-label="功能">補充現流首頁展示，將 QA 與公開／私人留言分開。</td><td data-label="規則">首頁現流最多兩項，當日新貨及預告優先。當時的首頁影片限制其後由新決策調整。</td><td data-label="證據"><a href="#fresh-evidence">增補規格與階段證據</a>；整版獨立測試待核對。</td></tr>
+          <tr><th scope="row">V1.9 <span>2026-11-11 現流確認</span></th><td data-label="功能">以指定日期與單一售價簡化現流發布，支援預告、12:00 開賣、售罄、暫停與恢復。</td><td data-label="規則">後續週期修訂確認週二 12:00 開新一期，週二 00:00 至 12:00 停止成立新訂單。</td><td data-label="證據"><a href="#fresh-evidence">11/13 隔離測試</a>；人工部分驗收另列限制。</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="panel" id="milestones" aria-labelledby="milestones-title">
+      <h2 id="milestones-title">測試里程碑與證據</h2>
+      <div class="history-evidence">
+        <section id="early-evidence"><h3>規格與早期 Git</h3><p>V1.7 版次沿革、V1.5／V1.6 留存規格和本機提交都已核對。V1.4 原始版缺口與早期精確驗收仍待補證；此頁只提供可公開的摘要。</p></section>
+        <section id="fresh-evidence"><h3>現流開賣與售罄</h3><p>11/13 Phase 2E-4 報告記載隔離回歸 141/141，瀏覽器案例 1/1。同期人工驗收仍有時間邊界與流程阻擋，分開記錄。</p></section>
+        <section><h3>付款與影片</h3><p>11/15 Phase 2E-5N-12 記載影片庫 44/44、全套隔離回歸 256/256、顧客補充回歸 10/10。顧客付款回報在隔離測試中維持待核對，人工核對才改變付款狀態。</p></section>
+        <section><h3>公開展示紀錄</h3><p><a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/cb8550ac4952b32e60d080d501687028a754aa0c">首次公開 Demo</a> · <a href="https://github.com/klfishmen/Khanting-Seafood-Demo/commit/9f3fa7cb84874572ca722482e6749ce2c7319319">首頁間距修正</a></p></section>
+      </div>
+    </section>
+    <section class="panel history-actions" aria-label="返回展示">
+      <a href="./" class="button-link">操作展示首頁</a>
+      <a href="./admin.html" class="button-link secondary">開啟展示後台</a>
+    </section>
+  </main>
+  <footer>崁仔頂小商人 · 課程展示摘要</footer>
+</body>
+</html>

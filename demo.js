@@ -339,7 +339,7 @@ $('place-order').addEventListener('click', () => {
     product.stock -= quantity;
   }
   cart.clear();
-  saveDemoState();
+  saveDemoState({ type: '建立示範訂單', target: order.id, before: '購物車', after: '尚未核對' });
   renderCart();
   renderOrder();
   $('order-title').focus();
@@ -366,7 +366,12 @@ onDemoStateChange(() => {
 });
 
 function renderDemoContent() {
-  $('announcement-copy').textContent = announcement;
+  $('announcement-copy').replaceChildren(...announcements.filter(entry => entry.published).map(entry => {
+    const paragraph = document.createElement('p');
+    paragraph.textContent = entry.text;
+    return paragraph;
+  }));
+  $('announcement-copy').hidden = !announcements.some(entry => entry.published);
   $('scenario-select').value = scenario;
   const cycle = DemoRules.cycle(scenario);
   $('scenario-status').textContent = `${cycle.title} · 模擬時刻 ${cycle.clock}`;
@@ -385,7 +390,7 @@ function renderDemoContent() {
     media.playsInline = true;
     media.preload = 'none';
     media.setAttribute('aria-label', video.title);
-    media.src = './market-demo.mp4';
+    media.src = videoHref(video.asset);
     section.append(title, description, media);
     return section;
   }));
@@ -393,8 +398,9 @@ function renderDemoContent() {
 }
 
 $('scenario-select').addEventListener('change', () => {
+  const before = scenario;
   scenario = $('scenario-select').value;
-  saveDemoState();
+  if (!saveDemoState({ type: '切換情境', target: '展示時鐘', before: DemoRules.cycle(before).title, after: DemoRules.cycle(scenario).title })) scenario = before;
   renderDemoContent();
   renderCart();
 });
@@ -464,7 +470,7 @@ $('report-form').addEventListener('submit', event => {
     recipient: $('report-recipient').value,
     status: 'pending',
   };
-  if (!saveDemoState()) {
+  if (!saveDemoState({ type: '回報匯款', target: entry.id, before: previous?.status === 'mismatch' ? '不符，待重填' : '未回報', after: '待核對' })) {
     entry.report = previous;
     $('report-message').textContent = '無法儲存示範回報，請重試。';
     return;
