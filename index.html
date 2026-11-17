@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./styles.css">
   <script src="./rules.js" defer></script>
   <script src="./fixtures.js" defer></script>
+  <script src="./operations.js" defer></script>
   <script src="./demo-state.js" defer></script>
   <script src="./demo.js" defer></script>
 </head>
@@ -239,6 +240,12 @@
       <dl id="recipient-details" class="totals"></dl>
       <button type="submit">送出示範匯款回報</button>
     </form>
+    <form class="checkout-actions" id="customer-recipient-form" hidden>
+      <label for="customer-recipient-choice">變更示範收件資料</label>
+      <select id="customer-recipient-choice"><option value="north">展示海港門市組合</option><option value="south">展示市集門市組合</option></select>
+      <button type="submit">儲存收件資料</button>
+    </form>
+    <p id="customer-recipient-status" role="status"></p>
   </dialog>
   <p id="announcement" class="sr-only" role="status"></p>
   <footer>崁仔頂小商人 · Demo｜商品、庫存與訂單均為合成資料。 <a href="./history.html">開發歷程</a> · <a href="./presentation/">Vibe Coding 開發成果</a></footer>

@@ -99,7 +99,7 @@ summary { cursor: pointer; font-weight: 720; }
 .messages small { color: var(--muted); }
 .messages p { margin: .25rem 0 0; }
 .message-composer { display: grid; gap: .45rem; }
-select, .checkout-actions input, .checkout-actions textarea {
+select, .checkout-actions input, .checkout-actions textarea, .ops-filters input {
   width: 100%;
   min-height: 2.75rem;
   padding: .5rem;
@@ -183,6 +183,24 @@ dialog.checkout {
 .admin-section { min-width: 0; padding: .9rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--paper); }
 .admin-section h4 { margin: 1rem 0 .4rem; }
 .admin-catalog { grid-column: 1 / -1; }
+.operations-nav { display: flex; flex-wrap: wrap; gap: .45rem; margin-block: 1rem; }
+.operations-nav a { display: inline-block; padding: .45rem .65rem; border-radius: .4rem; background: #142d3a; color: #f4f0e7; }
+.operations-nav a:hover, .operations-nav a:focus-visible { background: #226b6c; }
+.ops-wide, .ops-overview, .ops-publishing { grid-column: 1 / -1; }
+.ops-overview { border-top: 4px solid #e6a052; }
+.ops-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .65rem; min-width: 0; margin: .7rem 0; }
+.ops-filters label { min-width: 0; display: grid; gap: .3rem; flex: 1 1 9rem; }
+.ops-filters input, .ops-filters select { width: 100%; min-width: 0; }
+.ops-warning { color: #90250e; font-weight: 700; }
+.ops-warning:empty { margin: 0; }
+.table-scroll { max-width: 100%; overflow-x: auto; }
+.ops-table { width: 100%; min-width: 38rem; border-collapse: collapse; }
+.ops-table caption { text-align: left; font-weight: 700; padding: .5rem 0; }
+.ops-table th, .ops-table td { text-align: left; vertical-align: top; padding: .55rem; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.ops-table th { background: #e4efeb; }
+.ops-table td:has(.admin-actions) { min-width: 9rem; }
+#order-detail { width: min(95vw, 55rem); }
+#shipping-items li { break-inside: avoid; }
 .catalog-filters { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem; }
 .catalog-filters label { display: grid; gap: .3rem; min-width: 9rem; }
 #admin-stock h3, #admin-stock p { margin: 0; }
@@ -269,6 +287,7 @@ footer { padding: 1rem 5vw 2rem; text-align: center; color: #c1cad5; }
   .admin-grid { grid-template-columns: 1fr; }
 }
 @media print {
+  @page { size: A4; margin: 13mm; }
   body:has(#shipping-preview[open]) { overflow: visible; background: white; }
   body:has(#shipping-preview[open]) > :not(#shipping-preview),
   #shipping-preview .screen-only { display: none !important; }
@@ -284,4 +303,17 @@ footer { padding: 1rem 5vw 2rem; text-align: center; color: #c1cad5; }
     overflow: visible;
   }
   #shipping-preview::backdrop { background: transparent; }
+  body[data-print-section] { background: #fff; color: #000; }
+  body[data-print-section] > :not(#admin),
+  body[data-print-section] #admin > :not(#admin-grid),
+  body[data-print-section="profit"] #admin-grid > :not(#profit),
+  body[data-print-section="accounting"] #admin-grid > :not(#accounting),
+  body[data-print-section] .screen-only,
+  body[data-print-section] .ops-table td:last-child:has(.screen-only) { display: none !important; }
+  body[data-print-section] #admin, body[data-print-section] #admin-grid, body[data-print-section] .admin-section {
+    display: block; width: 100%; padding: 0; margin: 0; border: 0; background: #fff; box-shadow: none;
+  }
+  body[data-print-section] .ops-table { min-width: 0; font-size: 9pt; }
+  body[data-print-section] .table-scroll { overflow: visible; }
+  .ops-table tr { break-inside: avoid; }
 }

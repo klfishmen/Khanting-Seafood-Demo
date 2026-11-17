@@ -114,7 +114,7 @@ function renderCart() {
   const unavailable = cartHasUnavailableItems();
   $('cart-unavailable').hidden = !unavailable;
   $('cart-settlement').hidden = DemoRules.cycle(scenario).orderOpen;
-  $('place-order').disabled = !DemoRules.cycle(scenario).orderOpen || !cartUnlocked || !cart.size || unavailable || Boolean(order && !order.paid);
+  $('place-order').disabled = !DemoRules.cycle(scenario).orderOpen || !cartUnlocked || !cart.size || unavailable || Boolean(order && !order.paid && !order.cancelledAt);
 }
 
 function cartHasUnavailableItems() {
@@ -139,7 +139,7 @@ function renderOrder() {
   }
   results.hidden = !results.childElementCount;
   $('payment-status').textContent = `付款狀態：${demoOrderStatus(order)}`;
-  $('open-report-link').hidden = !order.reportToken;
+  $('open-report-link').hidden = !order.reportToken || Boolean(order.cancelledAt);
   if (order.reportToken) $('open-report-link').href = reportLink(order);
   $('send-email').disabled = !order.paid || order.emailRecorded;
   $('email-status').hidden = !order.emailRecorded;
@@ -258,7 +258,7 @@ $('cart-access').addEventListener('submit', (event) => {
   }
   showCartContent();
   if (cart.size && !$('place-order').disabled) $('place-order').focus();
-  else if (order && !order.paid) $('open-report-link').focus();
+  else if (order && !order.paid && !order.cancelledAt) $('open-report-link').focus();
   else if (order && !order.emailRecorded) $('send-email').focus();
   else $('close-cart').focus();
 });
@@ -318,16 +318,19 @@ $('post-private').addEventListener('click', () => {
 });
 
 $('place-order').addEventListener('click', () => {
-  if (!DemoRules.cycle(scenario).orderOpen || !cartUnlocked || !$('checkout').open || !cart.size || cartHasUnavailableItems() || (order && !order.paid)) return;
+  if (!DemoRules.cycle(scenario).orderOpen || !cartUnlocked || !$('checkout').open || !cart.size || cartHasUnavailableItems() || (order && !order.paid && !order.cancelledAt)) return;
   const amounts = cartAmounts();
   const items = products.filter(product => cart.has(product.id)).map(product => ({
     id: product.id, name: product.name, type: product.type, quantity: cart.get(product.id),
     remaining: product.stock - cart.get(product.id), unitPrice: product.price, unitCost: product.unitCost,
   }));
+  const createdAt = new Date().toISOString();
   order = {
     id: `DEMO-${String(orders.length + 1).padStart(3, '0')}`,
     items, subtotal: amounts.subtotal, shipping: amounts.shipping, total: amounts.total,
     paid: false, emailRecorded: false, shipped: false,
+    createdAt, weekly_cycle_id: DemoOperations.cycleId(createdAt),
+    customerName: '展示買家', customerPhone: '0000001234',
     reportToken: crypto.randomUUID(),
   };
   orders.unshift(order);
@@ -339,7 +342,14 @@ $('place-order').addEventListener('click', () => {
     product.stock -= quantity;
   }
   cart.clear();
-  saveDemoState({ type: '建立示範訂單', target: order.id, before: '購物車', after: '尚未核對' });
+  if (!saveDemoState({ type: '建立示範訂單', target: order.id, before: '購物車', after: '尚未核對' })) {
+    loadDemoState();
+    renderDemoContent();
+    renderCart();
+    renderOrder();
+    announce('無法儲存示範訂單，已保留原購物車。');
+    return;
+  }
   renderCart();
   renderOrder();
   $('order-title').focus();
@@ -444,7 +454,12 @@ function renderReport() {
   const entry = reportOrderFromLocation();
   $('report-order').textContent = entry ? `${entry.id} · 應付 ${money.format(entry.total)}` : '';
   $('report-message').textContent = entry ? demoOrderStatus(entry) : '找不到這筆示範訂單，請在原下單瀏覽器開啟信件中的表單。';
-  $('report-form').hidden = !entry || entry.paid || entry.report?.status === 'pending';
+  $('report-form').hidden = !entry || entry.paid || entry.cancelledAt || entry.report?.status === 'pending';
+  $('customer-recipient-form').hidden = !entry?.report || Boolean(entry?.batchId || entry?.cancelledAt);
+  const recipient = entry && DemoOperations.receiver(entry, demoRecipients);
+  $('customer-recipient-status').textContent = recipient
+    ? (entry.batchId ? '收件資料已鎖定｜' : '目前收件｜') + [recipient.name, recipient.seven, recipient.family].join('｜') : '';
+  if (entry?.report?.recipient) $('customer-recipient-choice').value = entry.report.recipient;
 }
 
 function openReportFromLocation() {
@@ -462,13 +477,14 @@ function openReportFromLocation() {
 $('report-form').addEventListener('submit', event => {
   event.preventDefault();
   const entry = reportOrderFromLocation();
-  if (!entry || entry.paid || entry.report?.status === 'pending') return;
+  if (!entry || entry.paid || entry.cancelledAt || entry.report?.status === 'pending') return;
   const previous = entry.report;
   entry.report = {
     amount: $('report-amount').valueAsNumber,
     tail: $('report-tail').value,
     recipient: $('report-recipient').value,
     status: 'pending',
+    reportedAt: new Date().toISOString(),
   };
   if (!saveDemoState({ type: '回報匯款', target: entry.id, before: previous?.status === 'mismatch' ? '不符，待重填' : '未回報', after: '待核對' })) {
     entry.report = previous;
@@ -477,6 +493,20 @@ $('report-form').addEventListener('submit', event => {
   }
   renderReport();
   renderOrder();
+});
+
+$('customer-recipient-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const entry = reportOrderFromLocation();
+  if (!entry?.report || entry.batchId || entry.cancelledAt) return;
+  const previous = DemoOperations.receiver(entry, demoRecipients);
+  const key = $('customer-recipient-choice').value;
+  const recipient = demoRecipients[key];
+  if (!recipient) return;
+  entry.report.recipient = key;
+  entry.recipientDetails = { ...recipient };
+  if (!saveDemoState({ type: '更新收件資料', target: entry.id, before: previous?.name ?? '未填', after: recipient.name })) loadDemoState();
+  renderReport();
 });
 
 $('close-report').addEventListener('click', () => $('report-dialog').close());

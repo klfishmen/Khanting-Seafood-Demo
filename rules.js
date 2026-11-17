@@ -15,6 +15,7 @@ globalThis.DemoRules = Object.freeze({
     return scenarios[scenario] ?? scenarios.open;
   },
   shipmentProblem(order) {
+    if (order.cancelledAt) return '訂單已取消';
     if (!order.paid) return '尚未核對付款';
     if (order.refundBlocked) return '退款異常，停止出貨';
     if (!order.report?.recipient || order.report.status !== 'verified') return '缺少已核對的收件資料';
@@ -24,6 +25,6 @@ globalThis.DemoRules = Object.freeze({
   },
   canShip(order) {
     return Boolean(order.paid && !order.refundBlocked && order.report?.status === 'verified' &&
-      order.report.recipient && order.batchId && !order.shipped);
+      order.report.recipient && order.batchId && !order.shipped && !order.cancelledAt);
   },
 });

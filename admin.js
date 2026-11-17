@@ -247,28 +247,6 @@ function renderMetrics(id, metrics) {
   }));
 }
 
-function renderProfit() {
-  const paid = orders.filter(entry => entry.paid);
-  const costed = paid.filter(entry => entry.items.length && entry.items.every(item =>
-    Number.isSafeInteger(item.unitPrice) && Number.isSafeInteger(item.unitCost)));
-  let revenue = 0;
-  let cost = 0;
-  for (const entry of costed) {
-    for (const item of entry.items) {
-      revenue += item.unitPrice * item.quantity;
-      cost += item.unitCost * item.quantity;
-    }
-  }
-  renderMetrics('admin-profit', [
-    ['已付款總額（含運費）', money.format(paid.reduce((sum, entry) => sum + entry.total, 0))],
-    ['納入毛利的商品收入', money.format(revenue)],
-    ['納入毛利的商品成本', money.format(cost)],
-    ['商品毛利', costed.length ? money.format(revenue - cost) : '—'],
-    ['商品毛利率', revenue ? (100 * (revenue - cost) / revenue).toFixed(1) + '%' : '—'],
-    ['成本缺漏，未計入毛利', paid.length - costed.length],
-  ]);
-}
-
 function previewEmail(entry, confirmation) {
   $('email-preview-recipient').textContent = demoCustomerEmail;
   $('email-preview-subject').textContent = `[示範] ${entry.id}｜${confirmation ? '付款確認' : '訂單已建立'}`;
@@ -288,12 +266,8 @@ function previewEmail(entry, confirmation) {
 }
 
 function previewShipping(entry) {
-  $('shipping-order-id').textContent = `訂單 ${entry.id}｜${demoOrderStatus(entry)}`;
-  const recipient = demoRecipients[entry.report.recipient];
-  $('shipping-recipient').textContent = `${entry.batchId}｜${recipient.name}｜${recipient.phone}｜${recipient.seven}｜${recipient.family}`;
-  $('shipping-items').replaceChildren(...entry.items.map(item =>
-    adminRow(`${productTypeLabel[item.type] ?? '商品'}｜${item.name} × ${item.quantity}`)));
-  $('shipping-preview').showModal();
+  const batch = batches.find(item => item.id === entry.batchId);
+  if (batch && !Ops.batchProblem(batch, [entry])) showBatchSheet(batch, [entry], false);
 }
 
 $('close-email-preview').addEventListener('click', () => $('email-preview').close());
@@ -301,13 +275,15 @@ $('close-shipping-preview').addEventListener('click', () => $('shipping-preview'
 $('print-order-sheet').addEventListener('click', () => window.print());
 
 function reconcile(entry) {
-  if (entry.paid || entry.report?.status !== 'pending') return;
+  if (entry.paid || entry.cancelledAt || entry.report?.status !== 'pending') return;
   const matched = entry.report.amount === entry.total && entry.report.tail === demoBankTail;
   entry.report.status = matched ? 'verified' : 'mismatch';
   entry.paid = matched;
+  entry.paidAt = matched ? new Date().toISOString() : null;
   if (!saveDemoState({ type: '人工核對匯款', target: entry.id, before: '待核對', after: matched ? '已核對' : '不符，待重填' })) {
     entry.report.status = 'pending';
     entry.paid = false;
+    entry.paidAt = null;
     $('admin-status').textContent = '無法儲存核對結果。';
     return;
   }
@@ -320,7 +296,7 @@ function renderRemittances() {
   $('admin-remittances').replaceChildren(...(reports.length ? reports.map(entry => {
     const report = entry.report;
     const text = `${entry.id}｜${demoOrderStatus(entry)}｜回報 ${money.format(report.amount)}／末五碼 ${report.tail}｜合成入帳 ${money.format(entry.total)}／末五碼 ${demoBankTail}`;
-    return adminRow(text, adminAction(`reconcile-${entry.id}`, '核對合成匯款', report.status !== 'pending', () => reconcile(entry)));
+    return adminRow(text, adminAction(`reconcile-${entry.id}`, '核對合成匯款', report.status !== 'pending' || Boolean(entry.cancelledAt), () => reconcile(entry)));
   }) : [adminRow('目前沒有匯款回報。')]));
 }
 
@@ -434,41 +410,183 @@ $('video-form').addEventListener('submit', event => {
   renderAdmin();
 });
 
+const batchOrders = batch => orders.filter(entry => entry.batchId === batch.id);
+let exceptionBatchId = '';
+
+function showBatchSheet(batch, assigned, picking) {
+  $('shipping-preview-title').textContent = picking ? '示範揀貨清單' : '示範出貨單';
+  $('print-order-sheet').textContent = picking ? '列印揀貨清單' : '列印出貨單';
+  $('shipping-order-id').textContent = picking ? `批次 ${batch.id}｜${assigned.length} 筆訂單` :
+    `批次 ${batch.id}｜訂單 ${assigned.map(entry => entry.id).join('、')}`;
+  $('shipping-recipient').textContent = `列印日期 ${Ops.date(new Date().toISOString())}｜批次備註：${batch.note || '無'}`;
+  let rows;
+  if (picking) {
+    rows = [...opsGroup(assigned.flatMap(entry => entry.items), item => item.id)].map(([, items]) =>
+      `${productTypeLabel[items[0].type] ?? '商品'}｜${items[0].name} × ${Ops.sum(items, item => item.quantity)}`);
+  } else {
+    rows = assigned.flatMap(entry => [
+      `${entry.id}｜${recipientSummary(entry.lockedRecipient)}`,
+      ...entry.items.map(item => `${productTypeLabel[item.type] ?? '商品'}｜${item.name} × ${item.quantity}`),
+    ]);
+  }
+  opsList('shipping-items', rows);
+  $('shipping-preview').showModal();
+}
+
+function advanceShipping(batch) {
+  const assigned = batchOrders(batch);
+  const next = Ops.advanceBatch(batch, assigned);
+  if (!next) return;
+  const before = Ops.batchStages[batch.status];
+  if (next === 'sent') {
+    const time = new Date().toISOString();
+    for (const entry of assigned.filter(entry => !entry.shipped)) {
+      entry.shipped = true;
+      entry.shippedAt = time;
+    }
+  }
+  batch.status = next;
+  saveAdminChange('推進批次', batch.id, before, Ops.batchStages[next]);
+  renderAdmin();
+}
+
+function openBatchException(batch) {
+  exceptionBatchId = batch.id;
+  $('batch-exception-title').textContent = batch.exception ? '解除批次異常' : '標記批次異常';
+  $('batch-exception-note').value = '';
+  $('batch-exception-dialog').showModal();
+}
+
+$('close-batch-exception').addEventListener('click', () => $('batch-exception-dialog').close());
+$('batch-exception-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const batch = batches.find(item => item.id === exceptionBatchId);
+  const note = $('batch-exception-note').value.trim();
+  if (!batch || !note || batch.status === 'complete') return;
+  const before = batch.exception || Ops.batchStages[batch.status];
+  batch.exception = batch.exception ? '' : note;
+  if (saveAdminChange('批次異常異動', batch.id, before, batch.exception ? '異常｜' + note : '解除｜' + note)) {
+    $('batch-exception-dialog').close();
+  }
+  renderAdmin();
+});
+
 function renderBatches() {
   const select = $('batch-select');
   const selected = select.value;
-  select.replaceChildren(...batches.map(batch => new Option(batch.id, batch.id)));
-  if (batches.some(batch => batch.id === selected)) select.value = selected;
-  $('admin-batches').replaceChildren(...(batches.length ? batches.map(batch => {
-    const assigned = orders.filter(entry => entry.batchId === batch.id);
-    return adminRow(`${batch.id}｜${assigned.length} 筆訂單${assigned.length ? '｜' + assigned.map(entry => entry.id).join('、') : ''}`);
+  const open = batches.filter(batch => batch.status === 'picking' && !batch.exception);
+  select.replaceChildren(...open.map(batch => new Option(batch.id, batch.id)));
+  if (open.some(batch => batch.id === selected)) select.value = selected;
+  const query = $('batch-search').value.trim().toLowerCase();
+  const state = $('batch-filter').value;
+  const filtered = batches.filter(batch => (!state || state === (batch.exception ? 'exception' : batch.status)) &&
+    [batch.id, batch.note, batch.exception].join(' ').toLowerCase().includes(query));
+  $('admin-batches').replaceChildren(...(filtered.length ? filtered.map(batch => {
+    const assigned = batchOrders(batch);
+    const problem = Ops.batchProblem(batch, assigned);
+    const next = Ops.advanceBatch(batch, assigned);
+    const controls = document.createElement('div');
+    controls.className = 'admin-actions';
+    controls.append(
+      adminAction('batch-pack-' + batch.id, '出貨單', Boolean(problem), () => showBatchSheet(batch, assigned, false)),
+      adminAction('batch-pick-' + batch.id, '揀貨清單', Boolean(problem), () => showBatchSheet(batch, assigned, true)),
+      adminAction('batch-next-' + batch.id, next ? Ops.batchStages[next] : '無可執行的下一步', !next, () => advanceShipping(batch)),
+      adminAction('batch-exception-' + batch.id, batch.exception ? '解除批次異常' : '標記批次異常',
+        batch.status === 'complete', () => openBatchException(batch)),
+    );
+    const quantity = Ops.sum(assigned.flatMap(entry => entry.items), item => item.quantity);
+    return adminRow(`${batch.id}｜${batch.exception ? '異常' : Ops.batchStages[batch.status]}｜${opsTime(batch.createdAt)}｜${assigned.length} 筆訂單｜${quantity} 件｜${assigned.map(entry => entry.id).join('、') || '尚未分配'}${batch.note ? '｜' + batch.note : ''}${batch.exception ? '｜' + batch.exception : ''}${problem ? '｜' + problem : ''}`, controls);
   }) : [adminRow('目前沒有出貨批次。先建立新批次再分配訂單。')]));
 }
 
 $('batch-form').addEventListener('submit', event => {
   event.preventDefault();
-  const batch = { id: `BATCH-${String(batches.length + 1).padStart(3, '0')}` };
+  const batch = { id: `BATCH-${String(batches.length + 1).padStart(3, '0')}`, status: 'picking',
+    createdAt: new Date().toISOString(), note: $('batch-note').value.trim() };
   batches.push(batch);
   if (!saveAdminChange('建立出貨批次', batch.id, '尚無批次', '可分配')) return;
   renderAdmin();
   $('batch-select').value = batch.id;
+  $('batch-note').value = '';
 });
 
 $('reset-demo').addEventListener('click', () => {
-  if (confirm('重設本 Demo 的商品、購物車、訂單、公告、影片與操作紀錄？') && resetDemoData()) location.reload();
+  if (confirm('重設本 Demo 的商品和成本、購物車、訂單、批次、流水帳、公告、影片與操作紀錄？') && resetDemoData()) location.reload();
 });
 
+let selectedOrderId = '';
+const recipientKeys = ['name', 'phone', 'seven', 'sevenCode', 'family', 'familyCode'];
+
+function selectedOrder() {
+  return orders.find(entry => entry.id === selectedOrderId);
+}
+
+function recipientSummary(recipient) {
+  return recipient ? [recipient.name, Ops.maskedPhone(recipient.phone),
+    `7-11 ${recipient.seven}${recipient.sevenCode ? '（' + recipient.sevenCode + '）' : ''}`,
+    `全家 ${recipient.family}${recipient.familyCode ? '（' + recipient.familyCode + '）' : ''}`].join('｜') : '未填收件資料';
+}
+
 function viewOrder(entry) {
-  renderMetrics('order-detail-metrics', [
-    ['訂單編號', entry.id], ['目前狀態', demoOrderStatus(entry)],
-    ['應付合計', money.format(entry.total)], ['出貨批次', entry.batchId ?? '尚未分配'],
-    ['退款異常', entry.refundBlocked ? '已標記，阻擋出貨' : '無'],
-    ['匯款回報', entry.report?.status === 'pending' ? '待核對' : entry.report ? demoOrderStatus(entry) : '未回報'],
-  ]);
-  $('order-detail-items').replaceChildren(...entry.items.map(item =>
-    adminRow(`${item.name} × ${item.quantity}｜${Number.isFinite(item.unitPrice) ? money.format(item.unitPrice) + '／份' : '未記錄單價'}`)));
+  selectedOrderId = entry.id;
+  $('order-detail-status').textContent = '';
+  $('order-cancel-reason').value = '';
+  renderOrderDetail(entry);
   $('order-detail').showModal();
 }
+
+function renderOrderDetail(entry) {
+  const receiver = Ops.receiver(entry, demoRecipients);
+  const batch = batches.find(item => item.id === entry.batchId);
+  renderMetrics('order-detail-metrics', [
+    ['訂單編號', entry.id], ['目前狀態', opsLabels[Ops.orderState(entry, batch)]],
+    ['成立時間', opsTime(entry.createdAt)], ['週期', entry.weekly_cycle_id ?? '未記錄'],
+    ['顧客／手機遮罩', `${receiver?.name ?? entry.customerName ?? '展示買家'}｜${Ops.maskedPhone(receiver?.phone ?? entry.customerPhone)}`],
+    ['商品小計', opsMoney(entry.subtotal)], ['顧客支付運費', opsMoney(entry.shipping)],
+    ['應付合計', opsMoney(entry.total)], ['出貨批次', entry.batchId ?? '尚未分配'],
+    ['批次狀態', batch?.exception ? '異常' : (Ops.batchStages[batch?.status] ?? '尚未分配')],
+    ['退款異常', entry.refundBlocked ? '已標記，阻擋出貨' : '無'],
+    ['匯款回報', entry.report ? `${entry.report.status === 'verified' ? '已核對' : entry.report.status === 'mismatch' ? '金額或末碼不符' : '待核對'}｜${opsMoney(entry.report.amount)}｜末五碼 ${entry.report.tail}` : '未回報'],
+    ['回報／核帳時間', `${opsTime(entry.report?.reportedAt)}／${opsTime(entry.paidAt)}`],
+    ['取消備註', entry.cancelReason ?? '—'],
+  ]);
+  $('order-detail-items').replaceChildren(...entry.items.map(item =>
+    adminRow(`${item.name} × ${item.quantity}｜單價 ${opsMoney(item.unitPrice)}｜小計 ${opsMoney(item.unitPrice == null ? null : item.unitPrice * item.quantity)}｜成本快照 ${opsMoney(item.unitCost)}／份`)));
+  $('order-recipient-lock').textContent = (entry.batchId ? '正式分配後已鎖定｜' : '') + recipientSummary(receiver);
+  $('order-recipient-form').hidden = Boolean(entry.batchId || entry.cancelledAt);
+  for (const key of recipientKeys) $('order-recipient-' + key).value = receiver?.[key] ?? '';
+  $('order-cancel-form').hidden = Boolean(entry.paid || entry.batchId || entry.cancelledAt);
+  const events = [...(entry.history ?? []), ...(batch?.history ?? []).filter(event =>
+    event.type === '推進批次' || event.type === '批次異常異動')].sort((a, b) => b.time.localeCompare(a.time));
+  opsList('order-history', events.map(event =>
+    `${opsTime(event.time)}｜${event.type}｜${event.before} → ${event.after}`), '此舊單沒有保留的狀態紀錄。');
+}
+
+$('order-recipient-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const entry = selectedOrder();
+  if (!entry || entry.batchId || entry.cancelledAt) return;
+  const receiver = Object.fromEntries(recipientKeys.map(key => [key, $('order-recipient-' + key).value.trim()]));
+  if (!Ops.validReceiver(receiver)) return;
+  const before = recipientSummary(Ops.receiver(entry, demoRecipients));
+  entry.recipientDetails = receiver;
+  if (saveAdminChange('更新收件資料', entry.id, before, recipientSummary(receiver))) $('order-detail-status').textContent = '已儲存示範收件資料。';
+  renderOrderDetail(selectedOrder());
+  renderAdmin();
+});
+
+$('order-cancel-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const entry = selectedOrder();
+  const reason = $('order-cancel-reason').value.trim();
+  if (!entry || entry.paid || entry.batchId || entry.cancelledAt || !reason) return;
+  const before = demoOrderStatus(entry);
+  entry.cancelledAt = new Date().toISOString();
+  entry.cancelReason = reason;
+  if (saveAdminChange('取消示範訂單', entry.id, before, '已取消｜' + reason)) $('order-detail-status').textContent = '已取消，庫存與週累積維持原值。';
+  renderOrderDetail(selectedOrder());
+  renderAdmin();
+});
 $('close-order-detail').addEventListener('click', () => $('order-detail').close());
 $('admin-order-search').addEventListener('input', renderAdmin);
 $('admin-order-filter').addEventListener('change', renderAdmin);
@@ -480,16 +598,11 @@ $('admin-scenario').addEventListener('change', () => {
 });
 
 function matchesOrder(entry, filter, query) {
-  const searchable = [entry.id, entry.batchId, ...entry.items.map(item => item.name)].join(' ').toLowerCase();
+  const receiver = Ops.receiver(entry, demoRecipients);
+  const searchable = [entry.id, entry.batchId, receiver?.name, entry.customerName,
+    Ops.maskedPhone(receiver?.phone ?? entry.customerPhone), ...entry.items.map(item => item.name)].join(' ').toLowerCase();
   if (!searchable.includes(query)) return false;
-  switch (filter) {
-    case 'unpaid': return !entry.paid;
-    case 'pending': return entry.report?.status === 'pending';
-    case 'paid': return entry.paid;
-    case 'blocked': return Boolean(entry.refundBlocked);
-    case 'shipped': return entry.shipped;
-    default: return true;
-  }
+  return filter === 'all' || filter === Ops.orderState(entry, batches.find(batch => batch.id === entry.batchId));
 }
 
 const operationTime = new Intl.DateTimeFormat('zh-TW', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Asia/Taipei' });
@@ -506,14 +619,7 @@ function renderOperations() {
 
 function renderAdmin() {
   const activeId = document.activeElement?.id;
-  renderMetrics('admin-summary', [
-    ['示範訂單', orders.length],
-    ['待模擬付款', orders.filter(entry => !entry.paid).length],
-    ['待核對匯款', orders.filter(entry => entry.report?.status === 'pending').length],
-    ['待模擬出貨', orders.filter(entry => entry.paid && !entry.shipped).length],
-    ['低庫存品項（2 份以下）', products.filter(product => product.stock <= 2).length],
-  ]);
-  renderProfit();
+  renderOpsSections();
   renderRemittances();
   renderPublishing();
   renderBatches();
@@ -530,35 +636,42 @@ function renderAdmin() {
   $('admin-stock-log').replaceChildren(...(stockLog.length ? stockLog : ['目前沒有庫存異動。']).map(text => adminRow(text)));
 
   const query = $('admin-order-search').value.trim().toLowerCase();
-  const filtered = orders.filter(entry => matchesOrder(entry, $('admin-order-filter').value, query));
+  const filtered = orders.filter(entry => Ops.orderInScope(entry, opsScope()) && matchesOrder(entry, $('admin-order-filter').value, query));
   $('admin-orders').replaceChildren(...(filtered.length ? filtered.map(entry => {
     const details = entry.items.map(item => `${item.name} × ${item.quantity}`).join('、');
-    const ship = adminAction(`ship-${entry.id}`, '標記模擬出貨', !DemoRules.canShip(entry), () => {
-      if (!DemoRules.canShip(entry)) return;
+    const batch = batches.find(item => item.id === entry.batchId);
+    const canShip = () => DemoRules.canShip(entry) && batch && !Ops.batchProblem(batch, batchOrders(batch));
+    const ship = adminAction(`ship-${entry.id}`, '標記模擬出貨', !canShip(), () => {
+      if (!canShip()) return;
       entry.shipped = true;
+      entry.shippedAt = new Date().toISOString();
       if (!saveAdminChange('標記出貨', entry.id, '已分配', '已模擬出貨')) return;
       renderAdmin();
       $('admin-status').textContent = `${entry.id} 已標記模擬出貨。`;
     });
     const actions = document.createElement('div');
     actions.className = 'admin-actions';
-    const problem = DemoRules.shipmentProblem(entry);
-    const assign = adminAction(`assign-${entry.id}`, '分配所選批次', Boolean(problem) || !batches.length, () => {
+    const receiver = Ops.receiver(entry, demoRecipients);
+    const problem = DemoRules.shipmentProblem(entry) || (!Ops.validReceiver(receiver) ? '收件資料待補' : '');
+    const assign = adminAction(`assign-${entry.id}`, '分配所選批次', Boolean(problem) || !$('batch-select').value, () => {
       const batchId = $('batch-select').value;
-      if (DemoRules.shipmentProblem(entry) || !batches.some(batch => batch.id === batchId)) return;
+      if (DemoRules.shipmentProblem(entry) || !Ops.validReceiver(receiver) ||
+          !batches.some(item => item.id === batchId && item.status === 'picking' && !item.exception)) return;
       entry.batchId = batchId;
+      entry.lockedRecipient = { ...receiver };
+      entry.assignedAt = new Date().toISOString();
       saveAdminChange('分配出貨批次', entry.id, '尚未分配', batchId);
       renderAdmin();
     });
-    const refund = adminAction(`refund-${entry.id}`, '標記退款異常', entry.refundBlocked || entry.shipped, () => {
+    const refund = adminAction(`refund-${entry.id}`, '標記退款異常', entry.refundBlocked || Boolean(entry.cancelledAt), () => {
       entry.refundBlocked = true;
       saveAdminChange('退款異常', entry.id, '可依條件分配', '阻擋出貨');
       renderAdmin();
     });
-    const canPrint = Boolean(entry.batchId && entry.paid && !entry.refundBlocked && entry.report?.status === 'verified');
+    const canPrint = batch && !Ops.batchProblem(batch, [entry]);
     actions.append(adminAction(`detail-${entry.id}`, '查看詳情', false, () => viewOrder(entry)), assign, refund,
       adminAction(`print-${entry.id}`, '出貨單預覽', !canPrint, () => previewShipping(entry)), ship);
-    return adminRow(`${entry.id} · ${demoOrderStatus(entry)} · ${money.format(entry.total)}｜${details}｜${entry.batchId ?? '尚未分配'}${problem ? '｜' + problem : ''}`, actions);
+    return adminRow(`${entry.id} · ${opsLabels[Ops.orderState(entry, batch)]} · ${opsMoney(entry.total)}｜${receiver?.name ?? entry.customerName ?? '展示買家'} ${Ops.maskedPhone(receiver?.phone ?? entry.customerPhone)}｜${Ops.date(entry.createdAt) || '日期未記錄'} · ${entry.weekly_cycle_id ?? '週期未記錄'}｜${details}｜${entry.batchId ?? '尚未分配'}${problem ? '｜' + problem : ''}`, actions);
   }) : [adminRow(orders.length ? '找不到符合條件的訂單。' : '目前沒有示範訂單。')]));
   const notifications = orders.flatMap(entry => {
     const rows = [];
@@ -576,5 +689,11 @@ function renderAdmin() {
   else if (activeId) $('admin-title').focus();
 }
 
+initAdminOperations();
 renderAdmin();
-onDemoStateChange(renderAdmin);
+onDemoStateChange(() => {
+  renderAdmin();
+  if (!$('order-detail').open) return;
+  if (selectedOrder()) renderOrderDetail(selectedOrder());
+  else $('order-detail').close();
+});
